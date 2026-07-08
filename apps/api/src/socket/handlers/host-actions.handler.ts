@@ -1,0 +1,120 @@
+import type { Server, Socket } from 'socket.io';
+import { participantActionSchema, meetingLockSchema } from '@syncspace/validation';
+import { Meeting } from '../../models/meeting.model.js';
+import { ParticipantSession } from '../../models/participant-session.model.js';
+import { logger } from '../../lib/logger.js';
+
+async function getMeetingRoom(roomCode: string) {
+  const meeting = await Meeting.findOne({ roomCode });
+  return meeting;
+}
+
+function isHostOrCoHost(userId: string, meeting: any): boolean {
+  return (
+    meeting.hostId.toString() === userId ||
+    meeting.coHostIds.some((id: any) => id.toString() === userId)
+  );
+}
+
+function isHost(userId: string, meeting: any): boolean {
+  return meeting.hostId.toString() === userId;
+}
+
+export function registerHostActionHandlers(io: Server, socket: Socket) {
+  const user = (socket as any).user;
+
+  socket.on('participant:mute', async (payload, ack) => {
+    try {
+      const { roomCode, targetUserId } = participantActionSchema.parse(payload);
+      const meeting = await getMeetingRoom(roomCode);
+      if (!meeting) return ack?.({ success: false, error: { code: 'NOT_FOUND', message: 'Meeting not found' } });
+      if (!isHostOrCoHost(user.id, meeting)) return ack?.({ success: false, error: { code: 'PERMISSION_DENIED', message: 'Only host or co-host can mute participants' } });
+
+      await ParticipantSession.updateOne(
+        { meetingId: meeting._id, userId: targetUserId, leftAt: null },
+        { isMuted: true },
+      );
+
+      io.to(`meeting:${roomCode}`).emit('participant:muted', { userId: targetUserId, mutedBy: user.id });
+      if (ack) ack({ success: true });
+    } catch (error: any) {
+      if (ack) ack({ success: false, error: { code: 'ERROR', message: error.message } });
+    }
+  });
+
+  socket.on('participant:remove', async (payload, ack) => {
+    try {
+      const { roomCode, targetUserId } = participantActionSchema.parse(payload);
+      const meeting = await getMeetingRoom(roomCode);
+      if (!meeting) return ack?.({ success: false, error: { code: 'NOT_FOUND', message: 'Meeting not found' } });
+      if (!isHostOrCoHost(user.id, meeting)) return ack?.({ success: false, error: { code: 'PERMISSION_DENIED', message: 'Only host or co-host can remove participants' } });
+
+      await ParticipantSession.updateOne(
+        { meetingId: meeting._id, userId: targetUserId, leftAt: null },
+        { leftAt: new Date() },
+      );
+
+      io.to(`meeting:${roomCode}`).emit('participant:removed', { userId: targetUserId });
+      if (ack) ack({ success: true });
+    } catch (error: any) {
+      if (ack) ack({ success: false, error: { code: 'ERROR', message: error.message } });
+    }
+  });
+
+  socket.on('meeting:lock', async (payload, ack) => {
+    try {
+      const { roomCode } = meetingLockSchema.parse(payload);
+      const meeting = await getMeetingRoom(roomCode);
+      if (!meeting) return ack?.({ success: false, error: { code: 'NOT_FOUND', message: 'Meeting not found' } });
+      if (!isHost(user.id, meeting)) return ack?.({ success: false, error: { code: 'PERMISSION_DENIED', message: 'Only host can lock the meeting' } });
+
+      meeting.isLocked = true;
+      await meeting.save();
+
+      io.to(`meeting:${roomCode}`).emit('meeting:locked', { lockedBy: user.id });
+      if (ack) ack({ success: true });
+    } catch (error: any) {
+      if (ack) ack({ success: false, error: { code: 'ERROR', message: error.message } });
+    }
+  });
+
+  socket.on('meeting:unlock', async (payload, ack) => {
+    try {
+      const { roomCode } = meetingLockSchema.parse(payload);
+      const meeting = await getMeetingRoom(roomCode);
+      if (!meeting) return ack?.({ success: false, error: { code: 'NOT_FOUND', message: 'Meeting not found' } });
+      if (!isHostOrCoHost(user.id, meeting)) return ack?.({ success: false, error: { code: 'PERMISSION_DENIED', message: 'Only host or co-host can unlock the meeting' } });
+
+      meeting.isLocked = false;
+      await meeting.save();
+
+      io.to(`meeting:${roomCode}`).emit('meeting:unlocked', { unlockedBy: user.id });
+      if (ack) ack({ success: true });
+    } catch (error: any) {
+      if (ack) ack({ success: false, error: { code: 'ERROR', message: error.message } });
+    }
+  });
+
+  socket.on('meeting:end', async (payload, ack) => {
+    try {
+      const { roomCode } = meetingLockSchema.parse(payload);
+      const meeting = await getMeetingRoom(roomCode);
+      if (!meeting) return ack?.({ success: false, error: { code: 'NOT_FOUND', message: 'Meeting not found' } });
+      if (!isHost(user.id, meeting)) return ack?.({ success: false, error: { code: 'PERMISSION_DENIED', message: 'Only host can end the meeting' } });
+
+      meeting.status = 'ended';
+      meeting.endedAt = new Date();
+      await meeting.save();
+
+      await ParticipantSession.updateMany(
+        { meetingId: meeting._id, leftAt: null },
+        { leftAt: new Date() },
+      );
+
+      io.to(`meeting:${roomCode}`).emit('meeting:ended', { endedBy: user.id });
+      if (ack) ack({ success: true });
+    } catch (error: any) {
+      if (ack) ack({ success: false, error: { code: 'ERROR', message: error.message } });
+    }
+  });
+}
