@@ -9,7 +9,7 @@ export async function authRoutes(app: FastifyInstance) {
   app.get('/verify-email/:token', authController.verifyEmail);
   app.post('/login', strictLimit, authController.login);
   app.post('/logout', { preHandler: [requireAuth] }, authController.logout);
-  app.get('/session', authController.getSession);
+  app.get('/session', { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, authController.getSession);
   app.post('/refresh', { preHandler: [requireAuth] }, authController.refreshSession);
   app.post('/forgot-password', strictLimit, authController.forgotPassword);
   app.post('/reset-password/:token', strictLimit, authController.resetPassword);

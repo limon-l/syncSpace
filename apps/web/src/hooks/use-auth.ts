@@ -1,27 +1,36 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { api } from '@/lib/api';
 import type { AuthSession, RegisterRequest, LoginRequest } from '@syncspace/types';
 
+let sessionCheckInFlight = false;
+
 export function useAuth() {
   const { user, isAuthenticated, isLoading, setUser, setLoading, clear } = useAuthStore();
   const router = useRouter();
+  const mountedRef = useRef(true);
 
   const checkSession = useCallback(async () => {
+    if (sessionCheckInFlight) return;
+    sessionCheckInFlight = true;
     try {
       setLoading(true);
       const data = await api.get<{ user: AuthSession['user'] | null }>('/api/auth/session');
-      setUser(data.user);
+      if (mountedRef.current) setUser(data.user);
     } catch {
-      clear();
+      if (mountedRef.current) clear();
+    } finally {
+      sessionCheckInFlight = false;
     }
   }, [setUser, setLoading, clear]);
 
   useEffect(() => {
+    mountedRef.current = true;
     checkSession();
+    return () => { mountedRef.current = false; };
   }, [checkSession]);
 
   const login = async (input: LoginRequest) => {
