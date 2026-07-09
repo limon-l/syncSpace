@@ -7,7 +7,7 @@ const COOKIE_OPTIONS = {
   path: '/',
   httpOnly: true,
   secure: config.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  sameSite: config.NODE_ENV === 'production' ? 'none' as const : 'strict' as const,
 };
 
 export async function register(request: FastifyRequest, reply: FastifyReply) {
