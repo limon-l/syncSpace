@@ -7,7 +7,7 @@ import { Mail, Lock, User, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function RegisterPage() {
-  const { register } = useAuth();
+  const { register } = useAuth({ skipInitialCheck: true });
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

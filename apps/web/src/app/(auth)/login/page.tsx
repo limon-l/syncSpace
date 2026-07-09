@@ -7,7 +7,7 @@ import { Mail, Lock, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login } = useAuth({ skipInitialCheck: true });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

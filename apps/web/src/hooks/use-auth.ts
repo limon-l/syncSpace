@@ -6,32 +6,35 @@ import { useAuthStore } from '@/stores/auth-store';
 import { api } from '@/lib/api';
 import type { AuthSession, RegisterRequest, LoginRequest } from '@syncspace/types';
 
-let sessionCheckInFlight = false;
+let pendingSessionCheck: Promise<void> | null = null;
 
-export function useAuth() {
+export function useAuth(opts?: { skipInitialCheck?: boolean }) {
   const { user, isAuthenticated, isLoading, setUser, setLoading, clear } = useAuthStore();
   const router = useRouter();
   const mountedRef = useRef(true);
 
   const checkSession = useCallback(async () => {
-    if (sessionCheckInFlight) return;
-    sessionCheckInFlight = true;
-    try {
+    if (pendingSessionCheck) return pendingSessionCheck;
+    const p = (async () => {
       setLoading(true);
-      const data = await api.get<{ user: AuthSession['user'] | null }>('/api/auth/session');
-      if (mountedRef.current) setUser(data.user);
-    } catch {
-      if (mountedRef.current) clear();
-    } finally {
-      sessionCheckInFlight = false;
-    }
+      try {
+        const data = await api.get<{ user: AuthSession['user'] | null }>('/api/auth/session');
+        if (mountedRef.current) setUser(data.user);
+      } catch {
+        if (mountedRef.current) clear();
+      }
+    })();
+    pendingSessionCheck = p;
+    await p;
+    pendingSessionCheck = null;
   }, [setUser, setLoading, clear]);
 
   useEffect(() => {
+    if (opts?.skipInitialCheck) return;
     mountedRef.current = true;
     checkSession();
     return () => { mountedRef.current = false; };
-  }, [checkSession]);
+  }, [checkSession, opts?.skipInitialCheck]);
 
   const login = async (input: LoginRequest) => {
     const data = await api.post<{ user: AuthSession['user']; expiresAt: string }>(

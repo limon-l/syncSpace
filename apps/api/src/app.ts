@@ -21,6 +21,7 @@ import { createCollabServer } from './collab/collab-server.js';
 async function main() {
   const app = Fastify({
     logger: false,
+    trustProxy: true,
   });
 
   await registerSecurity(app);
