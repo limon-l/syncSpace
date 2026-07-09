@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { api } from '@/lib/api';
-import { ping } from './actions';
 import type { MeetingSummary } from '@syncspace/types';
 
 export default function DashboardPage() {
@@ -12,10 +11,6 @@ export default function DashboardPage() {
   const router = useRouter();
   const [meetings, setMeetings] = useState<MeetingSummary[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    ping().catch(() => {});
-  }, []);
 
   const fetchMeetings = useCallback(async () => {
     try {
