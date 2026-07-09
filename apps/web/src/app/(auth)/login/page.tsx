@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
+import { Mail, Lock, Loader2 } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -27,54 +29,75 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-2xl font-semibold text-text-primary">Welcome back</h1>
-      <p className="mb-8 text-sm text-text-secondary">Sign in to your SyncSpace account</p>
+      <h1 className="mb-1 text-xl sm:text-2xl font-semibold text-text-primary">Welcome back</h1>
+      <p className="mb-6 sm:mb-8 text-sm text-text-secondary">Sign in to your SyncSpace account</p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm text-text-secondary">
+          <label htmlFor="email" className="mb-1.5 block text-sm text-text-secondary">
             Email
           </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-border bg-bg-surface px-3 py-2 text-text-primary outline-none focus:border-primary"
-            required
-          />
+          <div className="relative">
+            <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-xl border border-border bg-bg-primary/50 pl-10 pr-4 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-primary focus:bg-bg-primary placeholder:text-text-secondary/40"
+              placeholder="you@example.com"
+              required
+            />
+          </div>
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm text-text-secondary">
+          <label htmlFor="password" className="mb-1.5 block text-sm text-text-secondary">
             Password
           </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-border bg-bg-surface px-3 py-2 text-text-primary outline-none focus:border-primary"
-            required
-          />
+          <div className="relative">
+            <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-xl border border-border bg-bg-primary/50 pl-10 pr-4 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-primary focus:bg-bg-primary placeholder:text-text-secondary/40"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
         </div>
 
         {error && (
-          <p className="text-sm text-danger">{error}</p>
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-sm text-danger"
+          >
+            {error}
+          </motion.p>
         )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="relative w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
         >
-          {loading ? 'Signing in...' : 'Sign in'}
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <Loader2 size={16} className="animate-spin" />
+              Signing in...
+            </span>
+          ) : (
+            'Sign in'
+          )}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-text-secondary">
+      <p className="mt-6 sm:mt-8 text-center text-sm text-text-secondary">
         Don&apos;t have an account?{' '}
-        <Link href="/register" className="text-primary hover:underline">
+        <Link href="/register" className="text-primary hover:text-primary-hover transition-colors font-medium">
           Create one
         </Link>
       </p>

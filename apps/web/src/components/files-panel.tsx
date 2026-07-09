@@ -4,6 +4,8 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { Upload, File, Download, Trash2, Loader2 } from 'lucide-react';
 import { getSocket } from '@/lib/socket';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
 interface SharedFile {
   id: string;
   fileName: string;
@@ -33,7 +35,9 @@ export function FilesPanel({ roomCode, userId }: Props) {
 
   const fetchFiles = useCallback(async () => {
     try {
-      const res = await fetch(`/api/meetings/${roomCode}/files`);
+      const res = await fetch(`${API_BASE}/api/meetings/${roomCode}/files`, {
+        credentials: 'include',
+      });
       if (res.ok) setFiles(await res.json());
     } catch {
       /* ignore */
@@ -59,8 +63,9 @@ export function FilesPanel({ roomCode, userId }: Props) {
     form.append('file', file);
 
     try {
-      const res = await fetch(`/api/meetings/${roomCode}/files`, {
+      const res = await fetch(`${API_BASE}/api/meetings/${roomCode}/files`, {
         method: 'POST',
+        credentials: 'include',
         body: form,
       });
       if (res.ok) {
@@ -77,8 +82,9 @@ export function FilesPanel({ roomCode, userId }: Props) {
 
   const handleDelete = async (fileId: string) => {
     try {
-      const res = await fetch(`/api/meetings/${roomCode}/files/${fileId}`, {
+      const res = await fetch(`${API_BASE}/api/meetings/${roomCode}/files/${fileId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
       if (res.ok) setFiles((prev) => prev.filter((f) => f.id !== fileId));
     } catch {
@@ -87,7 +93,9 @@ export function FilesPanel({ roomCode, userId }: Props) {
   };
 
   const handleDownload = async (file: SharedFile) => {
-    const res = await fetch(`/api/meetings/${roomCode}/files/${file.id}`);
+    const res = await fetch(`${API_BASE}/api/meetings/${roomCode}/files/${file.id}`, {
+      credentials: 'include',
+    });
     if (!res.ok) return;
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -101,8 +109,12 @@ export function FilesPanel({ roomCode, userId }: Props) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="p-3 border-b border-border flex-shrink-0">
-        <label className="flex items-center justify-center gap-2 rounded-md border-2 border-dashed border-border p-3 cursor-pointer hover:border-primary transition-colors text-xs text-text-secondary hover:text-text-primary">
-          <Upload size={16} />
+        <label className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border p-3 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-xs text-text-secondary hover:text-text-primary">
+          {uploading ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Upload size={16} />
+          )}
           {uploading ? 'Uploading...' : 'Upload file'}
           <input
             ref={inputRef}
@@ -125,31 +137,35 @@ export function FilesPanel({ roomCode, userId }: Props) {
           files.map((f) => (
             <div
               key={f.id}
-              className="flex items-center gap-2 rounded-md px-2 py-2 hover:bg-bg-elevated group"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-bg-elevated transition-colors group"
             >
-              <File size={16} className="shrink-0 text-primary" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                <File size={16} className="text-primary" />
+              </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-text-primary truncate">{f.fileName}</p>
-                <p className="text-[10px] text-text-secondary">
+                <p className="text-sm text-text-primary truncate">{f.fileName}</p>
+                <p className="text-xs text-text-secondary">
                   {formatSize(f.fileSize)} · {f.uploaderName}
                 </p>
               </div>
-              <button
-                onClick={() => handleDownload(f)}
-                className="shrink-0 rounded p-1 text-text-secondary hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Download"
-              >
-                <Download size={14} />
-              </button>
-              {f.uploadedBy === userId && (
+              <div className="flex items-center gap-1">
                 <button
-                  onClick={() => handleDelete(f.id)}
-                  className="shrink-0 rounded p-1 text-text-secondary hover:text-danger transition-colors"
-                  title="Delete"
+                  onClick={() => handleDownload(f)}
+                  className="rounded-lg p-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-surface opacity-0 group-hover:opacity-100 transition-all"
+                  title="Download"
                 >
-                  <Trash2 size={14} />
+                  <Download size={14} />
                 </button>
-              )}
+                {f.uploadedBy === userId && (
+                  <button
+                    onClick={() => handleDelete(f.id)}
+                    className="rounded-lg p-1.5 text-text-secondary hover:text-danger hover:bg-danger/10 transition-all"
+                    title="Delete"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
             </div>
           ))
         )}

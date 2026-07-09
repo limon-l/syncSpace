@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
 import type { Meeting } from '@syncspace/types';
+import { Mic, MicOff, Video, VideoOff, Loader2, ArrowRight } from 'lucide-react';
 
 export default function PrejoinPage() {
   const { roomCode } = useParams<{ roomCode: string }>();
@@ -123,10 +124,16 @@ export default function PrejoinPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg-primary">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-bg-primary gap-3">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+        >
+          <Loader2 size={24} className="text-primary" />
+        </motion.div>
         <motion.p
-          className="text-text-secondary"
-          animate={{ opacity: [0.4, 1, 0.4] }}
+          className="text-sm text-text-secondary"
+          animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
           Loading meeting...
@@ -141,7 +148,7 @@ export default function PrejoinPage() {
         <motion.p
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-2 text-danger"
+          className="mb-2 text-lg text-danger"
         >
           {error}
         </motion.p>
@@ -153,17 +160,23 @@ export default function PrejoinPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg-primary p-4">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-bg-primary p-4 sm:p-6 lg:p-8 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute left-1/2 top-1/3 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-[120px]" />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="w-full max-w-lg"
+        className="w-full max-w-md lg:max-w-lg"
       >
-        <h1 className="mb-1 text-xl font-semibold text-text-primary">{meeting?.title}</h1>
-        <p className="mb-6 text-sm text-text-secondary">Room: {roomCode}</p>
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-lg sm:text-xl font-semibold text-text-primary">{meeting?.title || 'Meeting'}</h1>
+          <p className="text-xs sm:text-sm text-text-secondary mt-1 font-mono">{roomCode}</p>
+        </div>
 
-        <div className="mb-4 overflow-hidden rounded-lg bg-bg-surface">
+        <div className="relative mb-4 overflow-hidden rounded-2xl bg-bg-surface border border-border">
           <video
             ref={videoRef}
             autoPlay
@@ -171,32 +184,44 @@ export default function PrejoinPage() {
             playsInline
             className="aspect-video w-full object-cover"
           />
+          <div className="absolute bottom-2 left-2 flex gap-1.5">
+            <span className={`rounded-lg px-2 py-1 text-xs backdrop-blur-sm flex items-center gap-1 ${micEnabled ? 'bg-black/50 text-white' : 'bg-danger/80 text-white'}`}>
+              {micEnabled ? <Mic size={12} /> : <MicOff size={12} />}
+              {micEnabled ? 'Mic On' : 'Mic Off'}
+            </span>
+            <span className={`rounded-lg px-2 py-1 text-xs backdrop-blur-sm flex items-center gap-1 ${camEnabled ? 'bg-black/50 text-white' : 'bg-danger/80 text-white'}`}>
+              {camEnabled ? <Video size={12} /> : <VideoOff size={12} />}
+              {camEnabled ? 'Cam On' : 'Cam Off'}
+            </span>
+          </div>
         </div>
 
-        <div className="mb-4 flex gap-2">
+        <div className="flex gap-2 mb-4">
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             onClick={toggleMic}
-            className={`rounded-md px-3 py-1.5 text-xs ${
+            className={`flex-1 rounded-xl px-3 py-2 text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
               micEnabled
-                ? 'bg-bg-elevated text-text-primary'
-                : 'bg-danger/20 text-danger'
+                ? 'bg-bg-elevated text-text-primary border border-border'
+                : 'bg-danger/20 text-danger border border-danger/30'
             }`}
           >
-            Mic {micEnabled ? 'On' : 'Off'}
+            {micEnabled ? <Mic size={14} /> : <MicOff size={14} />}
+            {micEnabled ? 'Microphone On' : 'Microphone Off'}
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             onClick={toggleCam}
-            className={`rounded-md px-3 py-1.5 text-xs ${
+            className={`flex-1 rounded-xl px-3 py-2 text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
               camEnabled
-                ? 'bg-bg-elevated text-text-primary'
-                : 'bg-danger/20 text-danger'
+                ? 'bg-bg-elevated text-text-primary border border-border'
+                : 'bg-danger/20 text-danger border border-danger/30'
             }`}
           >
-            Cam {camEnabled ? 'On' : 'Off'}
+            {camEnabled ? <Video size={14} /> : <VideoOff size={14} />}
+            {camEnabled ? 'Camera On' : 'Camera Off'}
           </motion.button>
         </div>
 
@@ -210,7 +235,7 @@ export default function PrejoinPage() {
               <select
                 value={selectedCam}
                 onChange={(e) => switchCamera(e.target.value)}
-                className="mb-2 w-full rounded-md border border-border bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                className="mb-2 w-full rounded-xl border border-border bg-bg-surface px-3 py-2.5 text-sm text-text-primary outline-none focus:border-primary"
               >
                 {cameras.map((cam) => (
                   <option key={cam.deviceId} value={cam.deviceId}>
@@ -232,7 +257,7 @@ export default function PrejoinPage() {
               <select
                 value={selectedMic}
                 onChange={(e) => setSelectedMic(e.target.value)}
-                className="mb-4 w-full rounded-md border border-border bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                className="mb-4 w-full rounded-xl border border-border bg-bg-surface px-3 py-2.5 text-sm text-text-primary outline-none focus:border-primary"
               >
                 {microphones.map((mic) => (
                   <option key={mic.deviceId} value={mic.deviceId}>
@@ -245,12 +270,13 @@ export default function PrejoinPage() {
         </AnimatePresence>
 
         <div className="mb-4">
-          <label className="mb-1 block text-sm text-text-secondary">Display name</label>
+          <label className="mb-1.5 block text-sm text-text-secondary">Display name</label>
           <input
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full rounded-md border border-border bg-bg-surface px-3 py-2 text-text-primary outline-none focus:border-primary"
+            className="w-full rounded-xl border border-border bg-bg-surface/50 px-4 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-primary focus:bg-bg-surface placeholder:text-text-secondary/40"
+            placeholder="Your name"
             maxLength={50}
           />
         </div>
@@ -273,9 +299,19 @@ export default function PrejoinPage() {
           whileTap={{ scale: 0.98 }}
           onClick={joinMeeting}
           disabled={joining || !displayName.trim()}
-          className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-medium text-white transition-all hover:bg-primary-hover hover:shadow-lg hover:shadow-primary-glow disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
         >
-          {joining ? 'Joining...' : 'Join meeting'}
+          {joining ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              Joining...
+            </>
+          ) : (
+            <>
+              Join meeting
+              <ArrowRight size={16} />
+            </>
+          )}
         </motion.button>
       </motion.div>
     </div>

@@ -113,20 +113,20 @@ export function CollaborativePad({ roomCode, displayName }: { roomCode: string; 
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col h-full"
     >
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
         <span className="text-sm font-medium text-text-primary">Collaborative Notes</span>
         <div className="flex items-center gap-2">
           {Array.from(remoteUsers.entries()).map(([clientId, user]) => (
             <span
               key={clientId}
-              className="text-xs px-1.5 py-0.5 rounded"
-              style={{ backgroundColor: user.color + '30', color: user.color }}
+              className="text-xs px-2 py-0.5 rounded-md"
+              style={{ backgroundColor: user.color + '20', color: user.color }}
             >
               {user.name}
             </span>
           ))}
           <span
-            className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}
+            className={`h-2 w-2 rounded-full ${isConnected ? 'bg-success' : 'bg-warning'}`}
             title={isConnected ? 'Connected' : 'Connecting...'}
           />
         </div>
@@ -137,7 +137,7 @@ export function CollaborativePad({ roomCode, displayName }: { roomCode: string; 
           value={text}
           onChange={handleChange}
           placeholder="Type your notes here... they sync in real-time"
-          className="w-full h-full resize-none bg-transparent p-4 text-sm text-text-primary placeholder:text-text-secondary/50 outline-none font-mono leading-relaxed"
+          className="w-full h-full resize-none bg-transparent p-4 text-sm text-text-primary placeholder:text-text-secondary/30 outline-none font-mono leading-relaxed"
           spellCheck={false}
         />
       </div>

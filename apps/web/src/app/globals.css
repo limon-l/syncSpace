@@ -6,7 +6,9 @@
   --color-bg-elevated: #151925;
   --color-primary: #7c5cfc;
   --color-primary-hover: #6b4de0;
+  --color-primary-glow: rgba(124, 92, 252, 0.25);
   --color-secondary: #23c9b8;
+  --color-secondary-glow: rgba(35, 201, 184, 0.2);
   --color-danger: #ff5d6c;
   --color-warning: #f59e0b;
   --color-success: #22c55e;
@@ -35,7 +37,31 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
 ::selection {
   background-color: rgba(124, 92, 252, 0.3);
   color: #f7f8fa;
+}
+
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }

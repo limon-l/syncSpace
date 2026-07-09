@@ -11,7 +11,7 @@ import { FilesPanel } from '@/components/files-panel';
 import { useAuthStore } from '@/stores/auth-store';
 import {
   Mic, MicOff, Video, VideoOff, MonitorUp, MonitorDown,
-  Hand, MessageCircle, Users, LogOut, Lock, ScreenShare, FileText, File,
+  Hand, MessageCircle, Users, LogOut, Lock, ScreenShare, FileText, File, X,
 } from 'lucide-react';
 import { type RemoteParticipant, type RemoteTrack, type RemoteTrackPublication } from 'livekit-client';
 import { motion, AnimatePresence } from 'motion/react';
@@ -75,7 +75,7 @@ function ParticipantVideoTile({
   return (
     <motion.div
       layout
-      className={`relative flex aspect-video items-center justify-center rounded-lg overflow-hidden ${
+      className={`relative flex aspect-video items-center justify-center rounded-xl overflow-hidden ${
         isSpeaking ? 'ring-2 ring-primary' : ''
       } ${isScreenSharing ? 'ring-2 ring-secondary' : ''} bg-bg-surface`}
     >
@@ -88,13 +88,13 @@ function ParticipantVideoTile({
           className="h-full w-full object-cover"
         />
       ) : (
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-bg-elevated">
-          <span className="text-lg font-medium text-text-primary">{initial}</span>
+        <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-bg-elevated">
+          <span className="text-lg sm:text-xl font-medium text-text-primary">{initial}</span>
         </div>
       )}
       <audio ref={audioRef} autoPlay playsInline muted={isLocal} />
 
-      <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-0.5">
+      <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-lg bg-black/60 backdrop-blur-sm px-2 py-1">
         <span className="text-xs text-white">{displayName}{isLocal ? ' (You)' : ''}</span>
         {isScreenSharing && <ScreenShare size={10} className="text-secondary" />}
       </div>
@@ -137,9 +137,9 @@ function ScreenShareTile({ participant }: { participant: RemoteParticipant }) {
   if (!screenTrack) return null;
 
   return (
-    <div className="relative aspect-video rounded-lg overflow-hidden bg-bg-surface">
+    <div className="relative aspect-video rounded-xl overflow-hidden bg-bg-surface border border-border">
       <video ref={videoRef} autoPlay playsInline className="h-full w-full object-contain" />
-      <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5">
+      <div className="absolute bottom-2 left-2 rounded-lg bg-black/60 backdrop-blur-sm px-2 py-1">
         <span className="text-xs text-white">{participant.name || participant.identity} is sharing</span>
       </div>
     </div>
@@ -166,6 +166,7 @@ export default function MeetingRoomPage() {
   const [screenSharing, setScreenSharing] = useState(false);
   const [screenShareStream, setScreenShareStream] = useState<MediaStream | null>(null);
   const [activeSpeakerId, setActiveSpeakerId] = useState<string | null>(null);
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
 
   const lk = useLiveKit({
     roomName: roomCode,
@@ -413,6 +414,18 @@ export default function MeetingRoomPage() {
     setChatInput('');
   }
 
+  function openPanel(panel: 'people' | 'chat' | 'notes' | 'files') {
+    if (window.innerWidth < 1024) {
+      setMobilePanelOpen(true);
+    }
+    setSidePanel(panel);
+  }
+
+  function closePanel() {
+    setSidePanel(null);
+    setMobilePanelOpen(false);
+  }
+
   if (socketError) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-bg-primary">
@@ -429,318 +442,354 @@ export default function MeetingRoomPage() {
     (p) => p.trackPublications.has('screen_share'),
   );
 
-  return (
-      <div className="flex h-screen flex-col bg-bg-primary">
-        <AnimatePresence>
-          {!isConnected && lk.isConnected && (
-            <motion.div
-              initial={{ y: -30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -30, opacity: 0 }}
-              className="absolute top-0 left-0 right-0 z-50 bg-warning/90 py-1 text-center text-xs text-white"
+  const sidePanelContent = (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between border-b border-border px-4 py-2.5 flex-shrink-0">
+        <div className="flex gap-1.5">
+          {(['people', 'chat', 'notes', 'files'] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setSidePanel(p)}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                sidePanel === p ? 'bg-bg-elevated text-text-primary' : 'text-text-secondary hover:text-text-primary'
+              }`}
             >
-              Reconnecting...
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="flex items-center justify-between border-b border-border px-4 py-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-text-primary">SyncSpace</span>
-          <span className="text-sm text-text-secondary">·</span>
-          <span className="text-sm text-text-secondary">{roomCode}</span>
-          {isLocked && <Lock size={14} className="text-warning" />}
+              {p === 'people' ? 'People' : p === 'chat' ? 'Chat' : p === 'notes' ? 'Notes' : 'Files'}
+            </button>
+          ))}
         </div>
-        <div className="flex items-center gap-3">
+        <button onClick={closePanel} className="text-text-secondary hover:text-text-primary transition-colors">
+          <X size={16} />
+        </button>
+      </div>
+
+      {sidePanel === 'people' && (
+        <div className="flex-1 overflow-y-auto p-3 space-y-1">
+          {participants.map((p) => (
+            <div key={p.userId} className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-bg-elevated transition-colors">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-bg-elevated text-sm text-text-primary font-medium">
+                  {p.displayName.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm text-text-primary">{p.displayName}</p>
+                  {p.role !== 'participant' && (
+                    <p className="text-[10px] text-primary">{p.role === 'host' ? 'Host' : 'Co-host'}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {p.isHandRaised && (
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-warning/20 text-xs">
+                    ✋
+                  </span>
+                )}
+                {p.isMuted ? (
+                  <MicOff size={14} className="text-danger" />
+                ) : (
+                  <Mic size={14} className="text-text-secondary" />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {sidePanel === 'notes' && (
+        <div className="flex-1 overflow-hidden">
+          <CollaborativePad roomCode={roomCode} displayName={displayName} />
+        </div>
+      )}
+
+      {sidePanel === 'files' && (
+        <FilesPanel roomCode={roomCode} userId={userId} />
+      )}
+
+      {sidePanel === 'chat' && (
+        <>
+          <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            {chatMessages.length === 0 && (
+              <p className="text-xs text-text-secondary text-center pt-8">No messages yet</p>
+            )}
+            {chatMessages.map((msg) => (
+              <div key={msg.id}>
+                <p className="text-xs text-text-secondary font-medium">{msg.senderName}</p>
+                <p className="text-sm text-text-primary">{msg.content}</p>
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+          <div className="border-t border-border p-3 flex gap-2 flex-shrink-0">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendChat()}
+              placeholder="Type a message..."
+              className="flex-1 rounded-xl border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-primary placeholder:text-text-secondary/40"
+            />
+            <button
+              onClick={sendChat}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+            >
+              Send
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex h-screen flex-col bg-bg-primary overflow-hidden">
+      <AnimatePresence>
+        {!isConnected && lk.isConnected && (
+          <motion.div
+            initial={{ y: -30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -30, opacity: 0 }}
+            className="absolute top-0 left-0 right-0 z-50 bg-warning/90 py-1.5 text-center text-xs text-white backdrop-blur-sm"
+          >
+            Reconnecting...
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex items-center justify-between border-b border-border px-3 sm:px-4 py-2 sm:py-2.5 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <span className="text-sm font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent shrink-0">
+            SyncSpace
+          </span>
+          <span className="text-text-secondary hidden sm:inline">·</span>
+          <span className="text-xs sm:text-sm text-text-secondary font-mono truncate">{roomCode}</span>
+          {isLocked && <Lock size={14} className="text-warning shrink-0" />}
+        </div>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {!isConnected && <span className="text-xs text-warning">Reconnecting...</span>}
-          {lk.isConnected && <span className="text-xs text-success">Live</span>}
-          <span className="text-sm text-text-secondary">
+          {lk.isConnected && (
+            <span className="flex items-center gap-1.5 text-xs text-success">
+              <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+              Live
+            </span>
+          )}
+          <span className="text-xs sm:text-sm text-text-secondary">
             {participants.length} participant{participants.length !== 1 ? 's' : ''}
           </span>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <motion.div layout className="flex-1 overflow-y-auto p-2">
-          <AnimatePresence>
-            {hasScreenShare && (
-              <motion.div
-                key="screen-share"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mb-2 overflow-hidden"
-              >
-                {allRemoteParticipants.map((p) => (
-                  <ScreenShareTile key={`screen-${p.identity}`} participant={p} />
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <motion.div layout className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {allRemoteParticipants.length === 0 && !lk.localParticipant ? (
-              <motion.div
-                key="connecting"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="col-span-full flex items-center justify-center aspect-video rounded-lg bg-bg-surface"
-              >
-                <motion.p
-                  className="text-text-secondary"
-                  animate={{ opacity: [0.4, 1, 0.4] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <motion.div layout className="flex-1 overflow-y-auto p-2 sm:p-3">
+            <AnimatePresence>
+              {hasScreenShare && (
+                <motion.div
+                  key="screen-share"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-2 sm:mb-3 overflow-hidden"
                 >
-                  Connecting...
-                </motion.p>
-              </motion.div>
-            ) : (
-              <>
-                {lk.localParticipant && lk.room && (
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.2 }}
+                  {allRemoteParticipants.filter((p) => p.trackPublications.has('screen_share')).map((p) => (
+                    <ScreenShareTile key={`screen-${p.identity}`} participant={p} />
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-3">
+              {allRemoteParticipants.length === 0 && !lk.localParticipant ? (
+                <motion.div
+                  key="connecting"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="col-span-full flex items-center justify-center aspect-video rounded-xl bg-bg-surface border border-border"
+                >
+                  <motion.p
+                    className="text-text-secondary text-sm"
+                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <ParticipantVideoTile
-                      participant={lk.localParticipant as unknown as RemoteParticipant}
-                      isLocal
-                      isSpeaking={activeSpeakerId === lk.localParticipant.identity}
-                      isScreenSharing={screenSharing}
-                    />
-                  </motion.div>
-                )}
-                <AnimatePresence>
-                  {allRemoteParticipants.map((p) => (
+                    Connecting...
+                  </motion.p>
+                </motion.div>
+              ) : (
+                <>
+                  {lk.localParticipant && lk.room && (
                     <motion.div
-                      key={p.identity}
                       layout
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ duration: 0.2 }}
                     >
                       <ParticipantVideoTile
-                        participant={p}
-                        isLocal={false}
-                        isSpeaking={activeSpeakerId === p.identity}
-                        isScreenSharing={false}
+                        participant={lk.localParticipant as unknown as RemoteParticipant}
+                        isLocal
+                        isSpeaking={activeSpeakerId === lk.localParticipant.identity}
+                        isScreenSharing={screenSharing}
                       />
                     </motion.div>
-                  ))}
-                </AnimatePresence>
-              </>
-            )}
+                  )}
+                  <AnimatePresence>
+                    {allRemoteParticipants.map((p) => (
+                      <motion.div
+                        key={p.identity}
+                        layout
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <ParticipantVideoTile
+                          participant={p}
+                          isLocal={false}
+                          isSpeaking={activeSpeakerId === p.identity}
+                          isScreenSharing={false}
+                        />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </>
+              )}
+            </motion.div>
           </motion.div>
-        </motion.div>
+
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 border-t border-border bg-bg-surface/80 backdrop-blur-sm px-2 sm:px-4 py-2 sm:py-3 flex-shrink-0 overflow-x-auto">
+            <button
+              onClick={toggleMic}
+              className={`rounded-full p-2 sm:p-3 transition-all ${
+                localMicOn ? 'bg-bg-elevated text-text-primary hover:bg-bg-elevated/80' : 'bg-danger text-white'
+              }`}
+              title={localMicOn ? 'Mute microphone (M)' : 'Unmute microphone (M)'}
+            >
+              {localMicOn ? <Mic size={16} className="sm:size-[18px]" /> : <MicOff size={16} className="sm:size-[18px]" />}
+            </button>
+
+            <button
+              onClick={toggleCam}
+              className={`rounded-full p-2 sm:p-3 transition-all ${
+                localCamOn ? 'bg-bg-elevated text-text-primary hover:bg-bg-elevated/80' : 'bg-danger text-white'
+              }`}
+              title={localCamOn ? 'Turn off camera (V)' : 'Turn on camera (V)'}
+            >
+              {localCamOn ? <Video size={16} className="sm:size-[18px]" /> : <VideoOff size={16} className="sm:size-[18px]" />}
+            </button>
+
+            <button
+              onClick={toggleScreenShare}
+              className={`rounded-full p-2 sm:p-3 transition-all ${
+                screenSharing ? 'bg-danger text-white' : 'bg-bg-elevated text-text-primary hover:bg-bg-elevated/80'
+              }`}
+              title={screenSharing ? 'Stop sharing' : 'Share screen'}
+            >
+              {screenSharing ? <MonitorDown size={16} className="sm:size-[18px]" /> : <MonitorUp size={16} className="sm:size-[18px]" />}
+            </button>
+
+            <div className="w-px h-6 sm:h-8 bg-border mx-0.5 sm:mx-1" />
+
+            <button
+              onClick={toggleHand}
+              className={`rounded-full p-2 sm:p-3 transition-all ${
+                localHandRaised ? 'bg-primary text-white' : 'bg-bg-elevated text-text-primary hover:bg-bg-elevated/80'
+              }`}
+              title={localHandRaised ? 'Lower hand' : 'Raise hand'}
+            >
+              <Hand size={16} className="sm:size-[18px]" />
+            </button>
+
+            <div className="w-px h-6 sm:h-8 bg-border mx-0.5 sm:mx-1" />
+
+            <button
+              onClick={() => { openPanel('chat'); }}
+              className={`rounded-full p-2 sm:p-3 transition-all ${
+                sidePanel === 'chat' ? 'bg-primary text-white' : 'bg-bg-elevated text-text-primary hover:bg-bg-elevated/80'
+              }`}
+              title="Chat"
+            >
+              <MessageCircle size={16} className="sm:size-[18px]" />
+            </button>
+
+            <button
+              onClick={() => { openPanel('people'); }}
+              className={`rounded-full p-2 sm:p-3 transition-all ${
+                sidePanel === 'people' ? 'bg-primary text-white' : 'bg-bg-elevated text-text-primary hover:bg-bg-elevated/80'
+              }`}
+              title="Participants"
+            >
+              <Users size={16} className="sm:size-[18px]" />
+            </button>
+
+            <button
+              onClick={() => { openPanel('notes'); }}
+              className={`rounded-full p-2 sm:p-3 transition-all ${
+                sidePanel === 'notes' ? 'bg-primary text-white' : 'bg-bg-elevated text-text-primary hover:bg-bg-elevated/80'
+              }`}
+              title="Collaborative Notes"
+            >
+              <FileText size={16} className="sm:size-[18px]" />
+            </button>
+
+            <button
+              onClick={() => { openPanel('files'); }}
+              className={`rounded-full p-2 sm:p-3 transition-all ${
+                sidePanel === 'files' ? 'bg-primary text-white' : 'bg-bg-elevated text-text-primary hover:bg-bg-elevated/80'
+              }`}
+              title="Files"
+            >
+              <File size={16} className="sm:size-[18px]" />
+            </button>
+
+            <div className="w-px h-6 sm:h-8 bg-border mx-0.5 sm:mx-1" />
+
+            <button
+              onClick={leaveMeeting}
+              className="rounded-full bg-danger/20 p-2 sm:p-3 text-danger hover:bg-danger/30 transition-all"
+              title="Leave meeting"
+            >
+              <LogOut size={16} className="sm:size-[18px]" />
+            </button>
+          </div>
+        </div>
 
         <AnimatePresence>
           {sidePanel && (
             <motion.div
-              key="side-panel"
+              key="side-panel-desktop"
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: 320, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeInOut' }}
-              className="border-l border-border bg-bg-surface flex flex-col overflow-hidden"
+              className="hidden lg:flex border-l border-border bg-bg-surface flex-col overflow-hidden"
             >
-            <div className="flex items-center justify-between border-b border-border px-4 py-2 flex-shrink-0">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSidePanel('people')}
-                  className={`text-xs px-2 py-1 rounded ${
-                    sidePanel === 'people' ? 'bg-bg-elevated text-text-primary' : 'text-text-secondary'
-                  }`}
-                >
-                  People
-                </button>
-                <button
-                  onClick={() => setSidePanel('chat')}
-                  className={`text-xs px-2 py-1 rounded ${
-                    sidePanel === 'chat' ? 'bg-bg-elevated text-text-primary' : 'text-text-secondary'
-                  }`}
-                >
-                  Chat
-                </button>
-                <button
-                  onClick={() => setSidePanel('notes')}
-                  className={`text-xs px-2 py-1 rounded ${
-                    sidePanel === 'notes' ? 'bg-bg-elevated text-text-primary' : 'text-text-secondary'
-                  }`}
-                >
-                  Notes
-                </button>
-                <button
-                  onClick={() => setSidePanel('files')}
-                  className={`text-xs px-2 py-1 rounded ${
-                    sidePanel === 'files' ? 'bg-bg-elevated text-text-primary' : 'text-text-secondary'
-                  }`}
-                >
-                  Files
-                </button>
-              </div>
-              <button onClick={() => setSidePanel(null)} className="text-xs text-text-secondary hover:text-text-primary">
-                Close
-              </button>
-            </div>
+              {sidePanelContent}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-            {sidePanel === 'people' && (
-              <div className="flex-1 overflow-y-auto p-3 space-y-1">
-                {participants.map((p) => (
-                  <div key={p.userId} className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-bg-elevated">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-bg-elevated text-xs text-text-primary">
-                        {p.displayName.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="text-sm text-text-primary">{p.displayName}</p>
-                        {p.role !== 'participant' && (
-                          <p className="text-[10px] text-primary">{p.role === 'host' ? 'Host' : 'Co-host'}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {p.isHandRaised && <span className="text-xs text-warning">✋</span>}
-                      {p.isMuted ? <MicOff size={14} className="text-danger" /> : <Mic size={14} className="text-text-secondary" />}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {sidePanel === 'notes' && (
-              <div className="flex-1 overflow-hidden">
-                <CollaborativePad roomCode={roomCode} displayName={displayName} />
-              </div>
-            )}
-
-            {sidePanel === 'files' && (
-              <FilesPanel roomCode={roomCode} userId={userId} />
-            )}
-
-            {sidePanel === 'chat' && (
-              <>
-                <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                  {chatMessages.length === 0 && (
-                    <p className="text-xs text-text-secondary text-center pt-8">No messages yet</p>
-                  )}
-                  {chatMessages.map((msg) => (
-                    <div key={msg.id}>
-                      <p className="text-xs text-text-secondary">{msg.senderName}</p>
-                      <p className="text-sm text-text-primary">{msg.content}</p>
-                    </div>
-                  ))}
-                  <div ref={chatEndRef} />
-                </div>
-                <div className="border-t border-border p-2 flex gap-2 flex-shrink-0">
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && sendChat()}
-                    placeholder="Type a message..."
-                    className="flex-1 rounded-md border border-border bg-bg-primary px-2 py-1.5 text-sm text-text-primary outline-none focus:border-primary"
-                  />
-                  <button onClick={sendChat} className="rounded-md bg-primary px-3 py-1.5 text-xs text-white hover:bg-primary-hover">
-                    Send
-                  </button>
-                </div>
-              </>
-            )}
+      <AnimatePresence>
+        {sidePanel && mobilePanelOpen && (
+          <motion.div
+            key="side-panel-mobile"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed inset-0 z-50 lg:hidden flex"
+          >
+            <div className="absolute inset-0 bg-black/40" onClick={closePanel} />
+            <motion.div
+              className="relative ml-auto w-full max-w-sm bg-bg-surface border-l border-border flex flex-col"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              {sidePanelContent}
+            </motion.div>
           </motion.div>
-        )}</AnimatePresence>
-      </div>
-
-      <div className="flex items-center justify-center gap-2 border-t border-border bg-bg-surface px-4 py-3">
-        <button
-          onClick={toggleMic}
-          className={`rounded-full p-3 transition-colors ${
-            localMicOn ? 'bg-bg-elevated text-text-primary' : 'bg-danger text-white'
-          }`}
-          title={localMicOn ? 'Mute microphone (M)' : 'Unmute microphone (M)'}
-        >
-          {localMicOn ? <Mic size={18} /> : <MicOff size={18} />}
-        </button>
-
-        <button
-          onClick={toggleCam}
-          className={`rounded-full p-3 transition-colors ${
-            localCamOn ? 'bg-bg-elevated text-text-primary' : 'bg-danger text-white'
-          }`}
-          title={localCamOn ? 'Turn off camera (V)' : 'Turn on camera (V)'}
-        >
-          {localCamOn ? <Video size={18} /> : <VideoOff size={18} />}
-        </button>
-
-        <button
-          onClick={toggleScreenShare}
-          className={`rounded-full p-3 transition-colors ${
-            screenSharing ? 'bg-danger text-white' : 'bg-bg-elevated text-text-primary'
-          }`}
-          title={screenSharing ? 'Stop sharing' : 'Share screen'}
-        >
-          {screenSharing ? <MonitorDown size={18} /> : <MonitorUp size={18} />}
-        </button>
-
-        <button
-          onClick={toggleHand}
-          className={`rounded-full p-3 transition-colors ${
-            localHandRaised ? 'bg-primary text-white' : 'bg-bg-elevated text-text-primary'
-          }`}
-          title={localHandRaised ? 'Lower hand' : 'Raise hand'}
-        >
-          <Hand size={18} />
-        </button>
-
-        <button
-          onClick={() => setSidePanel(sidePanel === 'chat' ? null : 'chat')}
-          className={`rounded-full p-3 transition-colors ${
-            sidePanel === 'chat' ? 'bg-primary text-white' : 'bg-bg-elevated text-text-primary'
-          }`}
-          title="Chat"
-        >
-          <MessageCircle size={18} />
-        </button>
-
-        <button
-          onClick={() => setSidePanel(sidePanel === 'files' ? null : 'files')}
-          className={`rounded-full p-3 transition-colors ${
-            sidePanel === 'files' ? 'bg-primary text-white' : 'bg-bg-elevated text-text-primary'
-          }`}
-          title="Files"
-        >
-          <File size={18} />
-        </button>
-
-        <button
-          onClick={() => setSidePanel(sidePanel === 'notes' ? null : 'notes')}
-          className={`rounded-full p-3 transition-colors ${
-            sidePanel === 'notes' ? 'bg-primary text-white' : 'bg-bg-elevated text-text-primary'
-          }`}
-          title="Collaborative Notes"
-        >
-          <FileText size={18} />
-        </button>
-
-        <button
-          onClick={() => setSidePanel(sidePanel === 'people' ? null : 'people')}
-          className={`rounded-full p-3 transition-colors ${
-            sidePanel === 'people' ? 'bg-primary text-white' : 'bg-bg-elevated text-text-primary'
-          }`}
-          title="Participants"
-        >
-          <Users size={18} />
-        </button>
-
-        <button
-          onClick={leaveMeeting}
-          className="rounded-full bg-danger/20 p-3 text-danger hover:bg-danger/30 transition-colors"
-          title="Leave meeting"
-        >
-          <LogOut size={18} />
-        </button>
-      </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
