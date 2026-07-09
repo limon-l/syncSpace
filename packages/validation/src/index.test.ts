@@ -4,18 +4,18 @@ import {
   loginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
-} from './auth';
+} from './auth.js';
 import {
   createMeetingSchema,
   roomCodeParam,
   joinMeetingSchema,
-} from './meeting';
+} from './meeting.js';
 import {
   meetingJoinSchema,
   chatSendSchema,
   reactionSendSchema,
   mediaStateSchema,
-} from './socket';
+} from './socket.js';
 
 describe('registerSchema', () => {
   it('accepts valid input', () => {
