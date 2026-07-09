@@ -55,7 +55,6 @@ const meetingSchema = new Schema<IMeeting>(
   { timestamps: true },
 );
 
-meetingSchema.index({ roomCode: 1 });
 meetingSchema.index({ hostId: 1, createdAt: -1 });
 meetingSchema.index({ status: 1 });
 meetingSchema.index({ participantIds: 1 });

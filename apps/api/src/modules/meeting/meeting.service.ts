@@ -1,10 +1,10 @@
+import mongoose from 'mongoose';
 import { nanoid } from 'nanoid';
 import { Meeting } from '../../models/meeting.model.js';
 import { ParticipantSession } from '../../models/participant-session.model.js';
-import { Message } from '../../models/message.model.js';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../lib/errors.js';
 import type { IUser } from '../../models/user.model.js';
-import type { MeetingStatus, ParticipantRole } from '@syncspace/types';
+import type { MeetingStatus } from '@syncspace/types';
 
 function generateRoomCode(): string {
   return nanoid(8).toLowerCase();
@@ -100,14 +100,14 @@ export async function joinMeeting(roomCode: string, userId: string) {
     throw new ValidationError('Meeting is full');
   }
 
-  let session = await ParticipantSession.findOne({
+  const existingSession = await ParticipantSession.findOne({
     meetingId: meeting._id,
     userId,
     leftAt: null,
   });
 
-  if (!session) {
-    session = await ParticipantSession.create({
+  if (!existingSession) {
+    await ParticipantSession.create({
       meetingId: meeting._id,
       userId,
       role: 'participant',
@@ -115,8 +115,8 @@ export async function joinMeeting(roomCode: string, userId: string) {
     });
   }
 
-  if (!meeting.participantIds.includes(userId as any)) {
-    meeting.participantIds.push(userId as any);
+  if (!meeting.participantIds.some((id) => id.toString() === userId)) {
+    meeting.participantIds.push(userId as unknown as mongoose.Types.ObjectId);
     await meeting.save();
   }
 

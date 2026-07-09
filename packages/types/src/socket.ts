@@ -34,15 +34,18 @@ export type ServerEvent =
 
 export type ReactionType = 'thumbsup' | 'clap' | 'laugh' | 'surprise' | 'heart';
 
+export type SocketErrorCode =
+  | 'PERMISSION_DENIED'
+  | 'VALIDATION_ERROR'
+  | 'NOT_FOUND'
+  | 'ROOM_FULL'
+  | 'MEETING_ENDED'
+  | 'UNAUTHORIZED'
+  | 'RATE_LIMITED'
+  | 'CONNECTION_ERROR';
+
 export interface SocketError {
-  code:
-    | 'PERMISSION_DENIED'
-    | 'VALIDATION_ERROR'
-    | 'NOT_FOUND'
-    | 'ROOM_FULL'
-    | 'MEETING_ENDED'
-    | 'UNAUTHORIZED'
-    | 'RATE_LIMITED';
+  code: SocketErrorCode;
   message: string;
 }
 

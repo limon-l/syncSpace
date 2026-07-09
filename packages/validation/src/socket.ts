@@ -13,7 +13,7 @@ export const meetingLeaveSchema = z.object({
 
 export const chatSendSchema = z.object({
   roomCode: z.string().length(8),
-  content: z.string().min(1).max(2000).trim(),
+  content: z.string().trim().min(1).max(2000),
 });
 
 export const reactionSendSchema = z.object({

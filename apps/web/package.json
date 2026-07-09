@@ -11,29 +11,34 @@
     "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
+    "@livekit/components-react": "^2.9.21",
     "@syncspace/types": "workspace:*",
     "@syncspace/validation": "workspace:*",
+    "@tanstack/react-query": "^5.62.0",
+    "clsx": "^2.1.0",
+    "livekit-client": "^2.20.1",
+    "lucide-react": "^0.468.0",
+    "motion": "^12.42.2",
     "next": "^15.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "zustand": "^5.0.0",
-    "@tanstack/react-query": "^5.62.0",
     "react-hook-form": "^7.54.0",
-    "@hookform/resolvers": "^3.9.0",
-    "zod": "^3.24.0",
     "socket.io-client": "^4.8.0",
-    "sonner": "^1.7.0",
-    "lucide-react": "^0.468.0",
-    "clsx": "^2.1.0"
+    "sonner": "^1.7.4",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.31",
+    "zod": "^3.24.0",
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
     "@syncspace/config": "workspace:*",
+    "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.0",
+    "postcss": "^8.5.0",
     "tailwindcss": "^4.0.0",
-    "@tailwindcss/postcss": "^4.0.0",
-    "postcss": "^8.5.0"
+    "typescript": "^5.7.0"
   }
 }

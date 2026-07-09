@@ -14,13 +14,9 @@ export function getSocket(): Socket {
   return socket;
 }
 
-export function connectSocket(token?: string) {
+export function connectSocket(): Socket {
   const s = getSocket();
   if (s.connected) return s;
-
-  if (token) {
-    s.auth = { token };
-  }
 
   s.connect();
   return s;
@@ -28,6 +24,7 @@ export function connectSocket(token?: string) {
 
 export function disconnectSocket() {
   if (socket) {
+    socket.removeAllListeners();
     socket.disconnect();
     socket = null;
   }

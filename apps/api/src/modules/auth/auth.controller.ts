@@ -12,8 +12,8 @@ const COOKIE_OPTIONS = {
 
 export async function register(request: FastifyRequest, reply: FastifyReply) {
   const body = registerSchema.parse(request.body);
-  const result = await authService.registerUser(body.email, body.password, body.displayName);
-  return reply.status(201).send(result);
+  await authService.registerUser(body.email, body.password, body.displayName);
+  return reply.status(201).send({ message: 'Verification email sent' });
 }
 
 export async function verifyEmail(
@@ -101,6 +101,13 @@ export async function refreshSession(request: FastifyRequest, reply: FastifyRepl
 
 export async function forgotPassword(request: FastifyRequest, reply: FastifyReply) {
   const body = forgotPasswordSchema.parse(request.body);
-  const result = await authService.forgotPassword(body.email);
+  await authService.forgotPassword(body.email);
   return reply.send({ message: 'If the email exists, a reset link has been sent' });
+}
+
+export async function resetPassword(request: FastifyRequest, reply: FastifyReply) {
+  const params = request.params as { token: string };
+  const { password } = resetPasswordSchema.parse(request.body);
+  const result = await authService.resetPassword(params.token, password);
+  return reply.send(result);
 }

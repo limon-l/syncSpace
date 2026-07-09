@@ -55,7 +55,6 @@ const userSchema = new Schema<IUser>(
   { timestamps: true },
 );
 
-userSchema.index({ email: 1 });
 userSchema.index({ emailVerificationToken: 1 }, { sparse: true });
 userSchema.index({ 'refreshTokens.tokenHash': 1 }, { sparse: true });
 

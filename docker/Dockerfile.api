@@ -1,0 +1,53 @@
+# Stage 1: Install dependencies and build
+FROM node:20-alpine AS builder
+RUN corepack enable && corepack prepare pnpm@10.7.0 --activate
+WORKDIR /app
+
+# Copy root manifests
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
+
+# Copy package manifests for all workspace packages
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY packages/types/package.json packages/types/
+COPY packages/validation/package.json packages/validation/
+COPY packages/config/package.json packages/config/
+
+# Install dependencies
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# Copy source files
+COPY apps/api/src apps/api/src
+COPY packages/types/src packages/types/src
+COPY packages/validation/src packages/validation/src
+COPY packages/config packages/config/
+
+# Build
+RUN pnpm --filter @syncspace/api build
+
+# Stage 2: Production image
+FROM node:20-alpine AS runner
+RUN corepack enable && corepack prepare pnpm@10.7.0 --activate
+WORKDIR /app
+
+# Copy only production dependencies
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/api/package.json apps/api/
+COPY packages/types/package.json packages/types/
+COPY packages/validation/package.json packages/validation/
+COPY packages/config/package.json packages/config/
+
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --prod
+
+# Copy built output
+COPY --from=builder /app/apps/api/dist apps/api/dist
+COPY --from=builder /app/node_modules/.pnpm node_modules/.pnpm
+
+# Create uploads directory
+RUN mkdir -p uploads data/ydocs
+
+EXPOSE 4000
+
+CMD ["node", "apps/api/dist/app.js"]

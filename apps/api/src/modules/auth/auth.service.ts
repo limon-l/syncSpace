@@ -1,9 +1,8 @@
 import crypto from 'node:crypto';
-import { promisify } from 'node:util';
-import { User, type IUser } from '../../models/user.model.js';
+import argon2 from 'argon2';
+import { User } from '../../models/user.model.js';
 import { ConflictError, UnauthorizedError, ValidationError } from '../../lib/errors.js';
-
-const scryptAsync = promisify(crypto.scrypt);
+import { sendVerificationEmail, sendPasswordResetEmail } from '../../lib/email.js';
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString('hex');
@@ -14,16 +13,16 @@ function hashToken(token: string): string {
 }
 
 async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.randomBytes(32).toString('hex');
-  const derivedKey = await scryptAsync(password, salt, 64) as Buffer;
-  return `${salt}:${derivedKey.toString('hex')}`;
+  return argon2.hash(password, {
+    type: argon2.argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 4,
+  });
 }
 
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  const [salt, key] = hash.split(':');
-  if (!salt || !key) return false;
-  const derivedKey = await scryptAsync(password, salt, 64) as Buffer;
-  return crypto.timingSafeEqual(Buffer.from(key, 'hex'), derivedKey);
+  return argon2.verify(hash, password);
 }
 
 export async function registerUser(email: string, password: string, displayName: string) {
@@ -45,10 +44,11 @@ export async function registerUser(email: string, password: string, displayName:
     emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
   });
 
+  await sendVerificationEmail(email, verificationToken);
+
   return {
     userId: user._id.toString(),
     email: user.email,
-    verificationToken,
   };
 }
 
@@ -180,7 +180,7 @@ export async function forgotPassword(email: string) {
   user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000);
   await user.save();
 
-  return { resetToken, email: user.email };
+  await sendPasswordResetEmail(email, resetToken);
 }
 
 export async function resetPassword(token: string, newPassword: string) {

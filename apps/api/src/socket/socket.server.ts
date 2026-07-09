@@ -6,6 +6,28 @@ import { registerPresenceHandlers } from './handlers/presence.handler.js';
 import { registerChatHandlers } from './handlers/chat.handler.js';
 import { registerReactionHandlers } from './handlers/reaction.handler.js';
 import { registerHostActionHandlers } from './handlers/host-actions.handler.js';
+import { registerMediaHandlers } from './handlers/media.handler.js';
+
+export interface SocketUser {
+  id: string;
+  displayName: string;
+  email: string;
+}
+
+function parseSessionCookie(cookieHeader: string | undefined): { userId: string; token: string } | null {
+  if (!cookieHeader) return null;
+  const match = cookieHeader.match(/session_token=([^;]+)/);
+  if (!match) return null;
+  const parts = match[1].split(':');
+  if (parts.length !== 2) return null;
+  return { userId: parts[0], token: parts[1] };
+}
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    io?: SocketServer;
+  }
+}
 
 export function createSocketServer(app: FastifyInstance) {
   const io = new SocketServer(app.server, {
@@ -18,34 +40,37 @@ export function createSocketServer(app: FastifyInstance) {
   });
 
   io.use(async (socket, next) => {
-    const token = socket.handshake.auth?.token;
-    const userId = socket.handshake.auth?.userId;
+    const cookie = socket.handshake.headers?.cookie;
+    const parsed = parseSessionCookie(cookie);
 
-    if (!token || !userId) {
+    if (!parsed) {
       return next(new Error('UNAUTHORIZED'));
     }
 
     try {
       const { validateSession } = await import('../modules/auth/auth.service.js');
-      const user = await validateSession(userId, token);
+      const user = await validateSession(parsed.userId, parsed.token);
       if (!user) {
         return next(new Error('UNAUTHORIZED'));
       }
-      (socket as any).user = user;
+      (socket as unknown as Record<string, unknown>).user = user;
       next();
     } catch {
       next(new Error('UNAUTHORIZED'));
     }
   });
 
+  app.io = io;
+
   io.on('connection', (socket) => {
-    const user = (socket as any).user;
+    const user = (socket as unknown as { user: SocketUser }).user;
     logger.info({ userId: user.id }, 'Socket connected');
 
     registerPresenceHandlers(io, socket);
     registerChatHandlers(io, socket);
     registerReactionHandlers(io, socket);
     registerHostActionHandlers(io, socket);
+    registerMediaHandlers(io, socket);
 
     socket.on('disconnect', () => {
       logger.info({ userId: user.id }, 'Socket disconnected');
