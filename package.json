@@ -12,6 +12,7 @@
     "vercel-build": "npx turbo build --filter=@syncspace/web"
   },
   "devDependencies": {
+    "next": "^15.2.0",
     "turbo": "^2.4.0",
     "prettier": "^3.5.0",
     "typescript": "^5.7.0"
