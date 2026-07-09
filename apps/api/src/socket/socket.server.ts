@@ -8,6 +8,16 @@ import { registerReactionHandlers } from './handlers/reaction.handler.js';
 import { registerHostActionHandlers } from './handlers/host-actions.handler.js';
 import { registerMediaHandlers } from './handlers/media.handler.js';
 
+const vercelAppRegex = /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/;
+
+function resolveSocketOrigin(origin: string | undefined): boolean {
+  if (!origin) return true;
+  const allowed = config.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
+  if (allowed.includes(origin)) return true;
+  if (vercelAppRegex.test(origin)) return true;
+  return false;
+}
+
 export interface SocketUser {
   id: string;
   displayName: string;
@@ -32,7 +42,7 @@ declare module 'fastify' {
 export function createSocketServer(app: FastifyInstance) {
   const io = new SocketServer(app.server, {
     cors: {
-      origin: config.CORS_ORIGIN.split(',').map((o) => o.trim()),
+      origin: resolveSocketOrigin,
       credentials: true,
     },
     pingInterval: 25000,
