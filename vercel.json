@@ -1,6 +1,0 @@
-{
-  "rootDirectory": "apps/web",
-  "buildCommand": "npx turbo build --filter=@syncspace/web",
-  "outputDirectory": ".next",
-  "framework": "nextjs"
-}
