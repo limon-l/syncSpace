@@ -3,7 +3,10 @@ import { z } from 'zod';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(4000),
-  MONGODB_URI: z.string().url('MONGODB_URI must be a valid connection string'),
+  MONGODB_URI: z.string().refine(
+    (val) => /^mongodb(\+srv)?:\/\/.+/.test(val),
+    'MONGODB_URI must be a valid MongoDB connection string',
+  ),
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   APP_URL: z.string().url('APP_URL must be a valid URL').default('http://localhost:3000'),

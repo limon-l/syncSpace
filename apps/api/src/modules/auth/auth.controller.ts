@@ -6,8 +6,8 @@ import { config } from '../../lib/config.js';
 const COOKIE_OPTIONS = {
   path: '/',
   httpOnly: true,
-  secure: true,
-  sameSite: 'none' as const,
+  secure: config.NODE_ENV === 'production',
+  sameSite: (config.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax',
 };
 
 export async function register(request: FastifyRequest, reply: FastifyReply) {

@@ -4,7 +4,10 @@ import { logger } from './logger.js';
 
 export async function connectDatabase() {
   try {
-    await mongoose.connect(config.MONGODB_URI);
+    await mongoose.connect(config.MONGODB_URI, {
+      serverSelectionTimeoutMS: 10_000,
+      connectTimeoutMS: 10_000,
+    });
     logger.info('Connected to MongoDB');
   } catch (error) {
     logger.error(error, 'Failed to connect to MongoDB');
