@@ -50,7 +50,7 @@ export function registerPresenceHandlers(io: Server, socket: Socket) {
       }
 
       if (!meeting.participantIds.some((id) => id.toString() === user.id)) {
-        meeting.participantIds.push(user.id as unknown as mongoose.Types.ObjectId);
+        meeting.participantIds.push(new mongoose.Types.ObjectId(user.id));
         await meeting.save();
       }
 

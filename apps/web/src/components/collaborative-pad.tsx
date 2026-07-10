@@ -5,7 +5,7 @@ import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { motion } from 'motion/react';
 
-const COLLAB_URL = process.env.NEXT_PUBLIC_COLLAB_URL || 'ws://localhost:4000/collab';
+const COLLAB_URL = process.env.NEXT_PUBLIC_COLLAB_URL || '/collab';
 
 const CURSOR_COLORS = [
   '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',

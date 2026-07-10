@@ -32,8 +32,8 @@ export default function PrejoinPage() {
         const data = await api.get<Meeting>(`/api/meetings/${roomCode}`);
         setMeeting(data);
         setDisplayName(user?.displayName || '');
-      } catch {
-        setError('Meeting not found');
+      } catch (err: any) {
+        setError(err?.message || 'Meeting not found');
       } finally {
         setLoading(false);
       }

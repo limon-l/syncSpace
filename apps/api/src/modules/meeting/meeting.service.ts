@@ -69,12 +69,14 @@ export async function getMeeting(roomCode: string) {
     leftAt: null,
   });
 
+  const host = meeting.hostId as unknown as { _id: unknown; displayName: string } | null;
+
   return {
     id: meeting._id.toString(),
     roomCode: meeting.roomCode,
     title: meeting.title,
-    hostId: meeting.hostId._id.toString(),
-    hostName: (meeting.hostId as unknown as { displayName: string }).displayName,
+    hostId: host?._id?.toString() ?? '',
+    hostName: host?.displayName ?? 'Unknown',
     coHostIds: meeting.coHostIds.map((id) => id.toString()),
     status: meeting.status as MeetingStatus,
     isLocked: meeting.isLocked,
@@ -116,7 +118,7 @@ export async function joinMeeting(roomCode: string, userId: string) {
   }
 
   if (!meeting.participantIds.some((id) => id.toString() === userId)) {
-    meeting.participantIds.push(userId as unknown as mongoose.Types.ObjectId);
+    meeting.participantIds.push(new mongoose.Types.ObjectId(userId));
     await meeting.save();
   }
 
