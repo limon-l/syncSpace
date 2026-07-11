@@ -3,6 +3,7 @@ import argon2 from 'argon2';
 import { User } from '../../models/user.model.js';
 import { ConflictError, UnauthorizedError, ValidationError } from '../../lib/errors.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../../lib/email.js';
+import { logger } from '../../lib/logger.js';
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString('hex');
@@ -44,7 +45,11 @@ export async function registerUser(email: string, password: string, displayName:
     emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
   });
 
-  await sendVerificationEmail(email, verificationToken);
+  try {
+    await sendVerificationEmail(email, verificationToken);
+  } catch (error) {
+    logger.error(error, 'Failed to send verification email');
+  }
 
   return {
     userId: user._id.toString(),
@@ -180,7 +185,11 @@ export async function forgotPassword(email: string) {
   user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000);
   await user.save();
 
-  await sendPasswordResetEmail(email, resetToken);
+  try {
+    await sendPasswordResetEmail(email, resetToken);
+  } catch (error) {
+    logger.error(error, 'Failed to send password reset email');
+  }
 }
 
 export async function resetPassword(token: string, newPassword: string) {

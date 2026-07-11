@@ -40,6 +40,7 @@ export type SocketErrorCode =
   | 'NOT_FOUND'
   | 'ROOM_FULL'
   | 'MEETING_ENDED'
+  | 'MEETING_LOCKED'
   | 'UNAUTHORIZED'
   | 'RATE_LIMITED'
   | 'CONNECTION_ERROR';

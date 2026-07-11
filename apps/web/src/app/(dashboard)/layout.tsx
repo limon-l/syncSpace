@@ -13,20 +13,19 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isLoading } = useAuthStore();
+  const { isLoading, isAuthenticated, user } = useAuthStore();
 
   useAuth();
 
   useEffect(() => {
     if (!isLoading) {
-      const user = useAuthStore.getState().user;
       if (!user) {
         router.push('/login');
       }
     }
-  }, [isLoading, router]);
+  }, [isLoading, user, router]);
 
-  if (isLoading) {
+  if (isLoading && !isAuthenticated) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-bg-primary gap-3">
         <motion.div

@@ -2,6 +2,7 @@ import { Server as SocketServer } from 'socket.io';
 import type { FastifyInstance } from 'fastify';
 import { config } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
+import { validateSession } from '../modules/auth/auth.service.js';
 import { registerPresenceHandlers } from './handlers/presence.handler.js';
 import { registerChatHandlers } from './handlers/chat.handler.js';
 import { registerReactionHandlers } from './handlers/reaction.handler.js';
@@ -28,7 +29,8 @@ function parseSessionCookie(cookieHeader: string | undefined): { userId: string;
   if (!cookieHeader) return null;
   const match = cookieHeader.match(/session_token=([^;]+)/);
   if (!match) return null;
-  const parts = match[1].split(':');
+  const decoded = decodeURIComponent(match[1]);
+  const parts = decoded.split(':');
   if (parts.length !== 2) return null;
   return { userId: parts[0], token: parts[1] };
 }
@@ -58,7 +60,6 @@ export function createSocketServer(app: FastifyInstance) {
     }
 
     try {
-      const { validateSession } = await import('../modules/auth/auth.service.js');
       const user = await validateSession(parsed.userId, parsed.token);
       if (!user) {
         return next(new Error('UNAUTHORIZED'));

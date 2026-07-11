@@ -229,7 +229,7 @@ export default function MeetingRoomPage() {
     }
 
     function onParticipantLeft(data: { userId: string }) {
-      const p = participants.find((p) => p.userId === data.userId);
+      const p = useMeetingStore.getState().participants.find((p) => p.userId === data.userId);
       removeParticipant(data.userId);
       if (p) toast(`${p.displayName} left`, { duration: 3000 });
     }
@@ -239,9 +239,7 @@ export default function MeetingRoomPage() {
     }
 
     function onParticipantRemoved(data: { userId: string }) {
-      if (data.userId === useMeetingStore.getState().participants.find(
-        (p) => p.userId === data.userId
-      )?.userId) {
+      if (data.userId === userId) {
         router.push('/dashboard');
         return;
       }
@@ -328,7 +326,7 @@ export default function MeetingRoomPage() {
       reset();
       hasJoined.current = false;
     };
-  }, [roomCode, displayName, router, setConnected, setSocketError, addParticipant,
+  }, [roomCode, displayName, userId, router, setConnected, setSocketError, addParticipant,
       removeParticipant, updateParticipant, addChatMessage, setIsLocked, setSidePanel,
       setRoomCode, reset]);
 
@@ -347,19 +345,27 @@ export default function MeetingRoomPage() {
     setLocalMicOn((prev) => {
       const next = !prev;
       const socket = getSocket();
-      socket.emit('media:state', { roomCode, isMuted: !next, isCameraOff: !localCamOn });
+      const state = useMeetingStore.getState();
+      socket.emit('media:state', { roomCode, isMuted: !next, isCameraOff: !state.localCamOn });
+      if (lk.localParticipant) {
+        lk.localParticipant.setMicrophoneEnabled(next);
+      }
       return next;
     });
-  }, [roomCode, localCamOn, setLocalMicOn]);
+  }, [roomCode, setLocalMicOn, lk.localParticipant]);
 
   const toggleCam = useCallback(() => {
     setLocalCamOn((prev) => {
       const next = !prev;
       const socket = getSocket();
-      socket.emit('media:state', { roomCode, isMuted: !localMicOn, isCameraOff: !next });
+      const state = useMeetingStore.getState();
+      socket.emit('media:state', { roomCode, isMuted: !state.localMicOn, isCameraOff: !next });
+      if (lk.localParticipant) {
+        lk.localParticipant.setCameraEnabled(next);
+      }
       return next;
     });
-  }, [roomCode, localMicOn, setLocalCamOn]);
+  }, [roomCode, setLocalCamOn, lk.localParticipant]);
 
   const toggleHand = useCallback(() => {
     setLocalHandRaised((prev) => {
@@ -368,7 +374,7 @@ export default function MeetingRoomPage() {
       socket.emit(next ? 'hand:raise' : 'hand:lower', { roomCode });
       return next;
     });
-  }, [roomCode, setLocalHandRaised]);
+  }, [roomCode]);
 
   const toggleScreenShare = useCallback(async () => {
     if (screenSharing) {

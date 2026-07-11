@@ -15,6 +15,7 @@ export function useAuth(opts?: { skipInitialCheck?: boolean }) {
 
   const checkSession = useCallback(async () => {
     if (pendingSessionCheck) return pendingSessionCheck;
+    if (useAuthStore.getState().isAuthenticated) return;
     const p = (async () => {
       setLoading(true);
       try {

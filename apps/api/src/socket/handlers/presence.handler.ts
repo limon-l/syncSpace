@@ -25,6 +25,10 @@ export function registerPresenceHandlers(io: Server, socket: Socket) {
         return ack?.({ success: false, error: { code: 'MEETING_ENDED', message: 'Meeting has ended' } });
       }
 
+      if (meeting.isLocked && meeting.hostId.toString() !== user.id) {
+        return ack?.({ success: false, error: { code: 'MEETING_LOCKED', message: 'Meeting is locked. Ask the host to unlock it.' } });
+      }
+
       const activeCount = await ParticipantSession.countDocuments({
         meetingId: meeting._id,
         leftAt: null,
@@ -56,7 +60,7 @@ export function registerPresenceHandlers(io: Server, socket: Socket) {
 
       socket.join(`meeting:${roomCode}`);
 
-      io.to(`meeting:${roomCode}`).emit('participant:joined', {
+      socket.to(`meeting:${roomCode}`).emit('participant:joined', {
         userId: user.id,
         displayName: displayName || user.displayName,
         role: session.role,
@@ -71,6 +75,38 @@ export function registerPresenceHandlers(io: Server, socket: Socket) {
       logger.error(error, 'meeting:join error');
       const err = error as Error & { code?: string };
       if (ack) ack({ success: false, error: { code: (err.code as SocketErrorCode) || 'VALIDATION_ERROR', message: err.message } });
+    }
+  });
+
+  socket.on('hand:raise', async (payload: unknown, ack?: AckCallback) => {
+    try {
+      const { roomCode } = payload as { roomCode: string };
+
+      await ParticipantSession.updateOne(
+        { meetingId: (await Meeting.findOne({ roomCode }))?._id, userId: user.id, leftAt: null },
+        { isHandRaised: true },
+      );
+
+      socket.to(`meeting:${roomCode}`).emit('hand:raised', { userId: user.id });
+      if (ack) ack({ success: true });
+    } catch (error) {
+      if (ack) ack({ success: false, error: { code: 'VALIDATION_ERROR', message: (error as Error).message } });
+    }
+  });
+
+  socket.on('hand:lower', async (payload: unknown, ack?: AckCallback) => {
+    try {
+      const { roomCode } = payload as { roomCode: string };
+
+      await ParticipantSession.updateOne(
+        { meetingId: (await Meeting.findOne({ roomCode }))?._id, userId: user.id, leftAt: null },
+        { isHandRaised: false },
+      );
+
+      socket.to(`meeting:${roomCode}`).emit('hand:lowered', { userId: user.id });
+      if (ack) ack({ success: true });
+    } catch (error) {
+      if (ack) ack({ success: false, error: { code: 'VALIDATION_ERROR', message: (error as Error).message } });
     }
   });
 

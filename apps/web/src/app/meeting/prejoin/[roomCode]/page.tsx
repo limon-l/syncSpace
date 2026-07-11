@@ -173,7 +173,25 @@ export default function PrejoinPage() {
       >
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-lg sm:text-xl font-semibold text-text-primary">{meeting?.title || 'Meeting'}</h1>
-          <p className="text-xs sm:text-sm text-text-secondary mt-1 font-mono">{roomCode}</p>
+          <div className="flex items-center justify-center gap-2 mt-1">
+            <p className="text-xs sm:text-sm text-text-secondary font-mono">{roomCode}</p>
+            {meeting?.isLocked && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-warning/15 text-warning font-medium">
+                Locked
+              </span>
+            )}
+            {meeting?.status === 'ended' && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-danger/15 text-danger font-medium">
+                Ended
+              </span>
+            )}
+          </div>
+          {meeting?.hostName && (
+            <p className="text-xs text-text-secondary mt-2">
+              Hosted by <span className="font-medium text-text-primary">{meeting.hostName}</span>
+              {' · '}{meeting.participantCount} participant{meeting.participantCount !== 1 ? 's' : ''}
+            </p>
+          )}
         </div>
 
         <div className="relative mb-4 overflow-hidden rounded-2xl bg-bg-surface border border-border">
@@ -298,10 +316,12 @@ export default function PrejoinPage() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={joinMeeting}
-          disabled={joining || !displayName.trim()}
+          disabled={joining || !displayName.trim() || meeting?.status === 'ended'}
           className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-medium text-white transition-all hover:bg-primary-hover hover:shadow-lg hover:shadow-primary-glow disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
         >
-          {joining ? (
+          {meeting?.status === 'ended' ? (
+            'Meeting ended'
+          ) : joining ? (
             <>
               <Loader2 size={16} className="animate-spin" />
               Joining...
