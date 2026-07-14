@@ -34,6 +34,8 @@ interface UseLiveKitReturn {
   toggleCamera: () => Promise<void>;
 }
 
+const CONNECT_TIMEOUT_MS = 20_000;
+
 export function useLiveKit({
   roomName,
   onParticipantConnected,
@@ -56,6 +58,7 @@ export function useLiveKit({
   const connectedRef = useRef(false);
   const connectingRef = useRef(false);
   const handlersAttachedRef = useRef(false);
+  const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const connect = useCallback(async () => {
     if (connectedRef.current || connectingRef.current) return;
@@ -65,6 +68,10 @@ export function useLiveKit({
 
     if (!handlersAttachedRef.current) {
       room.on('connected', () => {
+        if (connectTimeoutRef.current) {
+          clearTimeout(connectTimeoutRef.current);
+          connectTimeoutRef.current = null;
+        }
         setIsConnected(true);
         setIsConnecting(false);
         connectedRef.current = true;
@@ -73,6 +80,10 @@ export function useLiveKit({
       });
 
       room.on('disconnected', () => {
+        if (connectTimeoutRef.current) {
+          clearTimeout(connectTimeoutRef.current);
+          connectTimeoutRef.current = null;
+        }
         setIsConnected(false);
         setIsConnecting(false);
         connectedRef.current = false;
@@ -97,6 +108,10 @@ export function useLiveKit({
 
       room.on('connectionStateChanged', (state) => {
         if (state === 'disconnected') {
+          if (connectTimeoutRef.current) {
+            clearTimeout(connectTimeoutRef.current);
+            connectTimeoutRef.current = null;
+          }
           setIsConnected(false);
           setIsConnecting(false);
           connectedRef.current = false;
@@ -112,21 +127,40 @@ export function useLiveKit({
       const url = LIVEKIT_URL;
       if (!url) throw new Error('LiveKit URL not configured');
 
-      await room.connect(url, token);
+      const connectPromise = room.connect(url, token);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        connectTimeoutRef.current = setTimeout(() => {
+          connectTimeoutRef.current = null;
+          reject(new Error('Connection timed out. Please check your network and try again.'));
+        }, CONNECT_TIMEOUT_MS);
+      });
+
+      await Promise.race([connectPromise, timeoutPromise]);
     } catch (err) {
+      if (connectTimeoutRef.current) {
+        clearTimeout(connectTimeoutRef.current);
+        connectTimeoutRef.current = null;
+      }
       room.disconnect();
       const message = err instanceof Error ? err.message : 'Failed to connect to LiveKit';
       setError(message);
       setIsConnecting(false);
+      setIsConnected(false);
+      connectedRef.current = false;
       connectingRef.current = false;
       onError?.(err instanceof Error ? err : new Error(message));
     }
   }, [roomName, room, onParticipantConnected, onParticipantDisconnected, onTrackSubscribed, onError]);
 
   const disconnect = useCallback(() => {
+    if (connectTimeoutRef.current) {
+      clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = null;
+    }
     room.disconnect();
     connectedRef.current = false;
     connectingRef.current = false;
+    setIsConnected(false);
     setIsConnecting(false);
   }, [room]);
 
@@ -154,6 +188,10 @@ export function useLiveKit({
 
   useEffect(() => {
     return () => {
+      if (connectTimeoutRef.current) {
+        clearTimeout(connectTimeoutRef.current);
+        connectTimeoutRef.current = null;
+      }
       room.disconnect();
       connectedRef.current = false;
       connectingRef.current = false;

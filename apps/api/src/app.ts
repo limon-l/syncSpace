@@ -49,7 +49,7 @@ async function main() {
 
   app.get('/api/health', {
     config: {
-      rateLimit: { max: 5, timeWindow: '1 minute' },
+      rateLimit: false,
     },
   }, async () => ({
     status: 'ok',

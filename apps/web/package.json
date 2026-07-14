@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
+    "prebuild": "pnpm --filter @syncspace/types build && pnpm --filter @syncspace/validation build",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

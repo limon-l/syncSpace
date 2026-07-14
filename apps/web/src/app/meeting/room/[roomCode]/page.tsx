@@ -44,8 +44,27 @@ function ParticipantVideoTile({
       if (track.kind === 'audio') setAudioTrack((prev) => prev === track ? null : prev);
     }
 
+    function handleLocalTrackPublished(pub: RemoteTrackPublication) {
+      if (pub.track) {
+        if (pub.track.kind === 'video') setVideoTrack(pub.track);
+        if (pub.track.kind === 'audio') setAudioTrack(pub.track);
+      }
+    }
+
+    function handleLocalTrackUnpublished(pub: RemoteTrackPublication) {
+      if (pub.track) {
+        if (pub.track.kind === 'video') setVideoTrack((prev) => prev === pub.track ? null : prev);
+        if (pub.track.kind === 'audio') setAudioTrack((prev) => prev === pub.track ? null : prev);
+      }
+    }
+
     participant.on('trackSubscribed', handleTrackSubscribed);
     participant.on('trackUnsubscribed', handleTrackUnsubscribed);
+
+    if (isLocal) {
+      participant.on('trackPublished', handleLocalTrackPublished);
+      participant.on('trackUnpublished', handleLocalTrackUnpublished);
+    }
 
     participant.trackPublications.forEach((pub) => {
       if (pub.track) handleTrackSubscribed(pub.track);
@@ -54,8 +73,12 @@ function ParticipantVideoTile({
     return () => {
       participant.off('trackSubscribed', handleTrackSubscribed);
       participant.off('trackUnsubscribed', handleTrackUnsubscribed);
+      if (isLocal) {
+        participant.off('trackPublished', handleLocalTrackPublished);
+        participant.off('trackUnpublished', handleLocalTrackUnpublished);
+      }
     };
-  }, [participant]);
+  }, [participant, isLocal]);
 
   useEffect(() => {
     if (videoRef.current && videoTrack?.mediaStream) {
@@ -652,7 +675,7 @@ export default function MeetingRoomPage() {
                     animate={{ opacity: [0.4, 1, 0.4] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    {lk.isConnecting ? 'Connecting to video...' : 'Waiting for camera access...'}
+                    {!isConnected ? 'Connecting to server...' : lk.isConnecting ? 'Connecting to video...' : 'Setting up meeting...'}
                   </motion.p>
                 </motion.div>
               ) : (

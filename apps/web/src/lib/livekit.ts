@@ -2,10 +2,12 @@
 
 import { Room, LocalParticipant, type RoomEvent, type RemoteParticipant, type Participant, type TrackPublication, createLocalTracks, type LocalTrack, type LocalVideoTrack, type LocalAudioTrack } from 'livekit-client';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+
 export const LIVEKIT_URL = process.env.NEXT_PUBLIC_LIVEKIT_URL || '';
 
 export async function fetchLiveKitToken(roomName: string): Promise<{ token: string; url: string }> {
-  const res = await fetch(`/api/livekit/token/${roomName}`, {
+  const res = await fetch(`${API_BASE}/api/livekit/token/${roomName}`, {
     credentials: 'include',
   });
 
