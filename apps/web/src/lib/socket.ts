@@ -9,6 +9,11 @@ export function getSocket(): Socket {
     socket = io(SOCKET_URL, {
       autoConnect: false,
       withCredentials: true,
+      reconnection: true,
+      reconnectionAttempts: 3,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 3000,
+      timeout: 15000,
     });
   }
   return socket;
@@ -17,7 +22,6 @@ export function getSocket(): Socket {
 export function connectSocket(): Socket {
   const s = getSocket();
   if (s.connected) return s;
-
   s.connect();
   return s;
 }

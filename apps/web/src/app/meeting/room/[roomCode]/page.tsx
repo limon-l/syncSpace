@@ -190,6 +190,7 @@ export default function MeetingRoomPage() {
   const [screenShareStream, setScreenShareStream] = useState<MediaStream | null>(null);
   const [activeSpeakerId, setActiveSpeakerId] = useState<string | null>(null);
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   const lk = useLiveKit({
     roomName: roomCode,
@@ -217,6 +218,7 @@ export default function MeetingRoomPage() {
   }, [lk.isConnected, lk.room]);
 
   useEffect(() => {
+    hasJoined.current = false;
     const socket = connectSocket();
     setConnected(socket.connected);
 
@@ -226,7 +228,7 @@ export default function MeetingRoomPage() {
         hasJoined.current = true;
         socket.emit('meeting:join', { roomCode, displayName }, (response: any) => {
           if (!response?.success) {
-            setSocketError(response?.error || { code: 'CONNECTION_ERROR', message: 'Failed to join meeting' });
+            setSocketError(response?.error || { code: 'JOIN_FAILED', message: 'Failed to join meeting' });
           } else {
             lk.connect();
           }
@@ -238,8 +240,15 @@ export default function MeetingRoomPage() {
       setConnected(false);
     }
 
-    function onConnectError() {
-      setSocketError({ code: 'CONNECTION_ERROR', message: 'Failed to connect to server' });
+    function onConnectError(error: Error) {
+      if (error?.message?.includes('UNAUTHORIZED')) {
+        try { socket.disconnect(); } catch {}
+        setSocketError({ code: 'UNAUTHORIZED', message: 'Your session has expired. Please log in again.' });
+      }
+    }
+
+    function onReconnectFailed() {
+      setSocketError({ code: 'CONNECTION_ERROR', message: 'Failed to connect to server. Please check your internet connection and try again.' });
     }
 
     function onError(data: SocketError) {
@@ -301,6 +310,7 @@ export default function MeetingRoomPage() {
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('connect_error', onConnectError);
+    socket.on('reconnect_failed', onReconnectFailed);
     socket.on('error', onError);
     socket.on('participant:joined', onParticipantJoined);
     socket.on('participant:left', onParticipantLeft);
@@ -319,7 +329,7 @@ export default function MeetingRoomPage() {
       hasJoined.current = true;
       socket.emit('meeting:join', { roomCode, displayName }, (response: any) => {
         if (!response?.success) {
-          setSocketError(response?.error || { code: 'CONNECTION_ERROR', message: 'Failed to join meeting' });
+          setSocketError(response?.error || { code: 'JOIN_FAILED', message: 'Failed to join meeting' });
         } else {
           lk.connect();
         }
@@ -331,6 +341,7 @@ export default function MeetingRoomPage() {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('connect_error', onConnectError);
+      socket.off('reconnect_failed', onReconnectFailed);
       socket.off('error', onError);
       socket.off('participant:joined', onParticipantJoined);
       socket.off('participant:left', onParticipantLeft);
@@ -351,7 +362,7 @@ export default function MeetingRoomPage() {
     };
   }, [roomCode, displayName, userId, router, setConnected, setSocketError, addParticipant,
       removeParticipant, updateParticipant, addChatMessage, setIsLocked, setSidePanel,
-      setRoomCode, reset]);
+      setRoomCode, reset, retryCount]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -457,11 +468,39 @@ export default function MeetingRoomPage() {
 
   if (socketError) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-bg-primary">
-        <p className="mb-2 text-lg text-danger">{socketError.message}</p>
-        <button onClick={() => router.push('/dashboard')} className="text-sm text-primary hover:underline">
-          Return to dashboard
-        </button>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-bg-primary gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-3 max-w-sm text-center"
+        >
+          <div className="h-12 w-12 rounded-full bg-danger/15 flex items-center justify-center">
+            <span className="text-danger text-lg">!</span>
+          </div>
+          <p className="text-lg text-danger font-medium">{socketError.message}</p>
+          <div className="flex gap-3 mt-2">
+            <button
+              onClick={() => {
+                setSocketError(null);
+                disconnectSocket();
+                setRetryCount((c) => c + 1);
+              }}
+              className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => {
+                reset();
+                disconnectSocket();
+                router.push('/dashboard');
+              }}
+              className="rounded-xl bg-bg-elevated px-5 py-2 text-sm font-medium text-text-primary hover:bg-bg-elevated/80 border border-border transition-colors"
+            >
+              Return to dashboard
+            </button>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -478,7 +517,11 @@ export default function MeetingRoomPage() {
           >
             Retry
           </button>
-          <button onClick={() => router.push('/dashboard')} className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+          <button onClick={() => {
+            reset();
+            disconnectSocket();
+            router.push('/dashboard');
+          }} className="text-sm text-text-secondary hover:text-text-primary transition-colors">
             Return to dashboard
           </button>
         </div>
