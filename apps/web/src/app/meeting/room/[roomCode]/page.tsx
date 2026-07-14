@@ -443,6 +443,26 @@ export default function MeetingRoomPage() {
     );
   }
 
+  if (lk.error) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-bg-primary gap-3">
+        <p className="mb-1 text-lg text-danger">Connection Error</p>
+        <p className="text-sm text-text-secondary max-w-md text-center">{lk.error}</p>
+        <div className="flex gap-3 mt-2">
+          <button
+            onClick={() => { lk.connect(); }}
+            className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+          >
+            Retry
+          </button>
+          <button onClick={() => router.push('/dashboard')} className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+            Return to dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const allRemoteParticipants = lk.participants;
   const hasScreenShare = allRemoteParticipants.some(
     (p) => p.trackPublications.has('screen_share'),
@@ -549,6 +569,16 @@ export default function MeetingRoomPage() {
   return (
     <div className="flex h-screen flex-col bg-bg-primary overflow-hidden">
       <AnimatePresence>
+        {lk.isConnecting && !lk.isConnected && (
+          <motion.div
+            initial={{ y: -30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -30, opacity: 0 }}
+            className="absolute top-0 left-0 right-0 z-50 bg-primary/90 py-1.5 text-center text-xs text-white backdrop-blur-sm"
+          >
+            Connecting to meeting...
+          </motion.div>
+        )}
         {!isConnected && lk.isConnected && (
           <motion.div
             initial={{ y: -30, opacity: 0 }}
@@ -571,7 +601,8 @@ export default function MeetingRoomPage() {
           {isLocked && <Lock size={14} className="text-warning shrink-0" />}
         </div>
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {!isConnected && <span className="text-xs text-warning">Reconnecting...</span>}
+          {lk.isConnecting && !lk.isConnected && <span className="text-xs text-primary">Connecting...</span>}
+          {!isConnected && lk.isConnected && <span className="text-xs text-warning">Reconnecting...</span>}
           {lk.isConnected && (
             <span className="flex items-center gap-1.5 text-xs text-success">
               <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
@@ -609,14 +640,19 @@ export default function MeetingRoomPage() {
                   key="connecting"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="col-span-full flex items-center justify-center aspect-video rounded-xl bg-bg-surface border border-border"
+                  className="col-span-full flex flex-col items-center justify-center aspect-video rounded-xl bg-bg-surface border border-border gap-3"
                 >
+                  <motion.div
+                    className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  />
                   <motion.p
                     className="text-text-secondary text-sm"
                     animate={{ opacity: [0.4, 1, 0.4] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    Connecting...
+                    {lk.isConnecting ? 'Connecting to video...' : 'Waiting for camera access...'}
                   </motion.p>
                 </motion.div>
               ) : (

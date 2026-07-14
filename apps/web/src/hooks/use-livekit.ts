@@ -24,6 +24,7 @@ interface UseLiveKitOptions {
 interface UseLiveKitReturn {
   room: Room | null;
   isConnected: boolean;
+  isConnecting: boolean;
   error: string | null;
   participants: RemoteParticipant[];
   localParticipant: LocalParticipant | null;
@@ -48,28 +49,34 @@ export function useLiveKit({
     },
   }));
   const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<RemoteParticipant[]>([]);
   const [localParticipant, setLocalParticipant] = useState<LocalParticipant | null>(null);
   const connectedRef = useRef(false);
+  const connectingRef = useRef(false);
+  const handlersAttachedRef = useRef(false);
 
   const connect = useCallback(async () => {
-    if (connectedRef.current) return;
+    if (connectedRef.current || connectingRef.current) return;
+    connectingRef.current = true;
+    setIsConnecting(true);
+    setError(null);
 
-    try {
-      const { token } = await fetchLiveKitToken(roomName);
-      const url = LIVEKIT_URL;
-      if (!url) throw new Error('LiveKit URL not configured');
-
+    if (!handlersAttachedRef.current) {
       room.on('connected', () => {
         setIsConnected(true);
+        setIsConnecting(false);
         connectedRef.current = true;
+        connectingRef.current = false;
         setLocalParticipant(room.localParticipant);
       });
 
       room.on('disconnected', () => {
         setIsConnected(false);
+        setIsConnecting(false);
         connectedRef.current = false;
+        connectingRef.current = false;
         setLocalParticipant(null);
         setParticipants([]);
       });
@@ -91,14 +98,27 @@ export function useLiveKit({
       room.on('connectionStateChanged', (state) => {
         if (state === 'disconnected') {
           setIsConnected(false);
+          setIsConnecting(false);
           connectedRef.current = false;
+          connectingRef.current = false;
         }
       });
 
+      handlersAttachedRef.current = true;
+    }
+
+    try {
+      const { token } = await fetchLiveKitToken(roomName);
+      const url = LIVEKIT_URL;
+      if (!url) throw new Error('LiveKit URL not configured');
+
       await room.connect(url, token);
     } catch (err) {
+      room.disconnect();
       const message = err instanceof Error ? err.message : 'Failed to connect to LiveKit';
       setError(message);
+      setIsConnecting(false);
+      connectingRef.current = false;
       onError?.(err instanceof Error ? err : new Error(message));
     }
   }, [roomName, room, onParticipantConnected, onParticipantDisconnected, onTrackSubscribed, onError]);
@@ -106,6 +126,8 @@ export function useLiveKit({
   const disconnect = useCallback(() => {
     room.disconnect();
     connectedRef.current = false;
+    connectingRef.current = false;
+    setIsConnecting(false);
   }, [room]);
 
   const toggleMic = useCallback(async () => {
@@ -134,12 +156,14 @@ export function useLiveKit({
     return () => {
       room.disconnect();
       connectedRef.current = false;
+      connectingRef.current = false;
     };
   }, [room]);
 
   return {
     room,
     isConnected,
+    isConnecting,
     error,
     participants,
     localParticipant,
