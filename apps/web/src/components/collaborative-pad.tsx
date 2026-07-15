@@ -5,7 +5,8 @@ import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { motion } from 'motion/react';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || '';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || API_URL;
 const COLLAB_URL = process.env.NEXT_PUBLIC_COLLAB_URL || (SOCKET_URL ? `${SOCKET_URL}/collab` : '/collab');
 
 const CURSOR_COLORS = [

@@ -45,7 +45,9 @@ export type SocketErrorCode =
   | 'RATE_LIMITED'
   | 'CONNECTION_ERROR'
   | 'CONNECTION_TIMEOUT'
-  | 'JOIN_TIMEOUT';
+  | 'JOIN_TIMEOUT'
+  | 'JOIN_FAILED'
+  | 'MISCONFIGURED';
 
 export interface SocketError {
   code: SocketErrorCode;

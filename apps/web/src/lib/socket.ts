@@ -1,8 +1,13 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || '';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || API_URL;
 
 let socket: Socket | null = null;
+
+export function getSocketUrl(): string {
+  return SOCKET_URL;
+}
 
 export function getSocket(): Socket {
   if (!socket) {
@@ -10,10 +15,10 @@ export function getSocket(): Socket {
       autoConnect: false,
       withCredentials: true,
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 8,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      timeout: 10000,
+      timeout: 15000,
     });
   }
   return socket;

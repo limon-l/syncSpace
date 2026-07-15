@@ -47,6 +47,16 @@ async function main() {
   await app.register(liveKitRoutes);
   await app.register(fileRoutes);
 
+  app.get('/', {
+    config: {
+      rateLimit: false,
+    },
+  }, async () => ({
+    name: 'SyncSpace API',
+    status: 'ok',
+    health: '/api/health',
+  }));
+
   app.get('/api/health', {
     config: {
       rateLimit: false,

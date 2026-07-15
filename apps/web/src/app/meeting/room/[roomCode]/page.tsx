@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useMeetingStore } from '@/stores/meeting-store';
-import { getSocket, connectSocket, disconnectSocket } from '@/lib/socket';
+import { getSocket, connectSocket, disconnectSocket, getSocketUrl } from '@/lib/socket';
 import { useLiveKit } from '@/hooks/use-livekit';
 import type { ChatMessage, Participant as ParticipantType, SocketError } from '@syncspace/types';
 import { CollaborativePad } from '@/components/collaborative-pad';
@@ -218,11 +218,20 @@ export default function MeetingRoomPage() {
   }, [lk.isConnected, lk.room]);
 
   useEffect(() => {
+    const socketUrl = getSocketUrl();
+    if (!socketUrl) {
+      setSocketError({
+        code: 'MISCONFIGURED',
+        message: 'Server URL not configured. Set NEXT_PUBLIC_SOCKET_URL or NEXT_PUBLIC_API_URL in your environment.',
+      });
+      return;
+    }
+
     hasJoined.current = false;
     const socket = connectSocket();
     setConnected(socket.connected);
 
-    const CONNECT_TIMEOUT_MS = 20_000;
+    const CONNECT_TIMEOUT_MS = 30_000;
     let connectTimeout: ReturnType<typeof setTimeout> | null = null;
     let joinAckTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -230,7 +239,10 @@ export default function MeetingRoomPage() {
       connectTimeout = setTimeout(() => {
         const state = useMeetingStore.getState();
         if (!state.isConnected && !state.socketError) {
-          setSocketError({ code: 'CONNECTION_TIMEOUT', message: 'Unable to connect to server. Please check your internet connection and try again.' });
+          setSocketError({
+            code: 'CONNECTION_TIMEOUT',
+            message: `Unable to connect to server at ${socketUrl}. The server may be starting up (Render free tier takes ~30-60s to wake). Please wait and try again.`,
+          });
         }
       }, CONNECT_TIMEOUT_MS);
     }
@@ -244,7 +256,7 @@ export default function MeetingRoomPage() {
         if (!state.socketError) {
           setSocketError({ code: 'JOIN_TIMEOUT', message: 'Server is not responding. Please try again.' });
         }
-      }, 10_000);
+      }, 15_000);
 
       socket.emit('meeting:join', { roomCode, displayName }, (response: any) => {
         if (joinAckTimeout) { clearTimeout(joinAckTimeout); joinAckTimeout = null; }
@@ -277,7 +289,10 @@ export default function MeetingRoomPage() {
 
     function onReconnectFailed() {
       if (connectTimeout) { clearTimeout(connectTimeout); connectTimeout = null; }
-      setSocketError({ code: 'CONNECTION_ERROR', message: 'Failed to connect to server. Please check your internet connection and try again.' });
+      setSocketError({
+        code: 'CONNECTION_ERROR',
+        message: `Failed to connect to ${socketUrl} after multiple attempts. The server may be down or sleeping.`,
+      });
     }
 
     function onError(data: SocketError) {

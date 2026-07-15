@@ -66,6 +66,15 @@ export function useLiveKit({
     setIsConnecting(true);
     setError(null);
 
+    if (!LIVEKIT_URL) {
+      setIsConnecting(false);
+      setIsConnected(false);
+      connectedRef.current = false;
+      connectingRef.current = false;
+      setError('LiveKit URL not configured. Set NEXT_PUBLIC_LIVEKIT_URL. Video/audio disabled.');
+      return;
+    }
+
     if (!handlersAttachedRef.current) {
       room.on('connected', () => {
         if (connectTimeoutRef.current) {

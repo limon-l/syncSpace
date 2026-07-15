@@ -2,11 +2,14 @@
 
 import { Room, LocalParticipant, type RoomEvent, type RemoteParticipant, type Participant, type TrackPublication, createLocalTracks, type LocalTrack, type LocalVideoTrack, type LocalAudioTrack } from 'livekit-client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 export const LIVEKIT_URL = process.env.NEXT_PUBLIC_LIVEKIT_URL || '';
 
 export async function fetchLiveKitToken(roomName: string): Promise<{ token: string; url: string }> {
+  if (!API_BASE) {
+    throw new Error('API URL not configured. Set NEXT_PUBLIC_API_URL.');
+  }
   const res = await fetch(`${API_BASE}/api/livekit/token/${roomName}`, {
     credentials: 'include',
   });
