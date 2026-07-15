@@ -68,6 +68,9 @@ async function main() {
 
   await connectDatabase();
 
+  createSocketServer(app);
+  createCollabServer(app.server);
+
   try {
     await app.listen({ port: config.PORT, host: '0.0.0.0' });
     logger.info({ port: config.PORT }, 'API server started');
@@ -75,9 +78,6 @@ async function main() {
     logger.error(error, 'Failed to start server');
     process.exit(1);
   }
-
-  createSocketServer(app);
-  createCollabServer(app.server);
 }
 
 main();

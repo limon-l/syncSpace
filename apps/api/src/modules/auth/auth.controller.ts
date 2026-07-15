@@ -3,11 +3,16 @@ import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema 
 import * as authService from './auth.service.js';
 import { config } from '../../lib/config.js';
 
-const COOKIE_OPTIONS = {
+const COOKIE_OPTIONS: {
+  path: string;
+  httpOnly: boolean;
+  secure: boolean;
+  sameSite: 'none' | 'lax' | 'strict';
+} = {
   path: '/',
   httpOnly: true,
-  secure: true,
-  sameSite: 'none' as const,
+  secure: config.NODE_ENV === 'production',
+  sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax',
 };
 
 export async function register(request: FastifyRequest, reply: FastifyReply) {

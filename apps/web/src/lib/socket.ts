@@ -15,10 +15,10 @@ export function getSocket(): Socket {
       autoConnect: false,
       withCredentials: true,
       reconnection: true,
-      reconnectionAttempts: 8,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      timeout: 15000,
+      reconnectionDelayMax: 10000,
+      timeout: 60000,
     });
   }
   return socket;

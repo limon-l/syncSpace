@@ -280,10 +280,16 @@ export default function MeetingRoomPage() {
     }
 
     function onConnectError(error: Error) {
-      if (error?.message?.includes('UNAUTHORIZED')) {
-        if (connectTimeout) { clearTimeout(connectTimeout); connectTimeout = null; }
+      if (connectTimeout) { clearTimeout(connectTimeout); connectTimeout = null; }
+      const msg = error?.message || 'Unknown connection error';
+      if (msg.includes('UNAUTHORIZED')) {
         try { socket.disconnect(); } catch {}
         setSocketError({ code: 'UNAUTHORIZED', message: 'Your session has expired. Please log in again.' });
+      } else {
+        setSocketError({
+          code: 'CONNECTION_ERROR',
+          message: `Connection failed: ${msg}. Retrying...`,
+        });
       }
     }
 
