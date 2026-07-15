@@ -8,6 +8,7 @@ import { registerChatHandlers } from './handlers/chat.handler.js';
 import { registerReactionHandlers } from './handlers/reaction.handler.js';
 import { registerHostActionHandlers } from './handlers/host-actions.handler.js';
 import { registerMediaHandlers } from './handlers/media.handler.js';
+import { registerTypingHandlers } from './handlers/typing.handler.js';
 
 const vercelAppRegex = /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/;
 
@@ -82,6 +83,7 @@ export function createSocketServer(app: FastifyInstance) {
     registerReactionHandlers(io, socket);
     registerHostActionHandlers(io, socket);
     registerMediaHandlers(io, socket);
+    registerTypingHandlers(io, socket);
 
     socket.on('disconnect', () => {
       logger.info({ userId: user.id }, 'Socket disconnected');

@@ -16,6 +16,10 @@ export const chatSendSchema = z.object({
   content: z.string().trim().min(1).max(2000),
 });
 
+export const chatTypingSchema = z.object({
+  roomCode: z.string().length(8),
+});
+
 export const reactionSendSchema = z.object({
   roomCode: z.string().length(8),
   reaction: reactionTypeEnum,
@@ -38,4 +42,17 @@ export const mediaStateSchema = z.object({
   roomCode: z.string().length(8),
   isMuted: z.boolean(),
   isCameraOff: z.boolean(),
+});
+
+export const meetingSettingsSchema = z.object({
+  waitingRoom: z.boolean().optional(),
+  muteOnJoin: z.boolean().optional(),
+  cameraOffOnJoin: z.boolean().optional(),
+  allowParticipantUnmute: z.boolean().optional(),
+  allowParticipantCam: z.boolean().optional(),
+});
+
+export const meetingTransferHostSchema = z.object({
+  roomCode: z.string().length(8),
+  targetUserId: z.string(),
 });

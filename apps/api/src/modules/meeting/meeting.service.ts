@@ -4,7 +4,8 @@ import { Meeting } from '../../models/meeting.model.js';
 import { ParticipantSession } from '../../models/participant-session.model.js';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../lib/errors.js';
 import type { IUser } from '../../models/user.model.js';
-import type { MeetingStatus } from '@syncspace/types';
+import type { MeetingStatus, MeetingSettings } from '@syncspace/types';
+import { DEFAULT_MEETING_SETTINGS } from '@syncspace/types';
 
 function generateRoomCode(): string {
   return nanoid(8).toLowerCase();
@@ -14,6 +15,7 @@ export async function createMeeting(
   user: IUser,
   title: string = 'Meeting',
   maxParticipants: number = 8,
+  settings?: Partial<MeetingSettings>,
 ) {
   let roomCode: string;
   let attempts = 0;
@@ -28,6 +30,7 @@ export async function createMeeting(
     title,
     hostId: user._id,
     maxParticipants,
+    settings: { ...DEFAULT_MEETING_SETTINGS, ...settings },
     startedAt: new Date(),
   });
 
@@ -50,6 +53,7 @@ export async function createMeeting(
     coHostIds: [],
     status: meeting.status as MeetingStatus,
     isLocked: meeting.isLocked,
+    settings: meeting.settings,
     participantCount: 1,
     maxParticipants: meeting.maxParticipants,
     startedAt: meeting.startedAt?.toISOString() ?? null,
@@ -80,6 +84,7 @@ export async function getMeeting(roomCode: string) {
     coHostIds: meeting.coHostIds.map((id) => id.toString()),
     status: meeting.status as MeetingStatus,
     isLocked: meeting.isLocked,
+    settings: meeting.settings,
     participantCount,
     maxParticipants: meeting.maxParticipants,
     startedAt: meeting.startedAt?.toISOString() ?? null,

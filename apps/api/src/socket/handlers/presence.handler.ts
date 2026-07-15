@@ -7,7 +7,7 @@ import { logger } from '../../lib/logger.js';
 import type { SocketUser } from '../socket.server.js';
 import type { SocketErrorCode, SocketResponse } from '@syncspace/types';
 
-type AckCallback = (response: SocketResponse<{ displayName: string }>) => void;
+type AckCallback = (response: SocketResponse<{ displayName: string; waiting?: boolean }>) => void;
 
 export function registerPresenceHandlers(io: Server, socket: Socket) {
   const user = (socket as unknown as { user: SocketUser }).user;
@@ -38,6 +38,18 @@ export function registerPresenceHandlers(io: Server, socket: Socket) {
         return ack?.({ success: false, error: { code: 'ROOM_FULL', message: 'Meeting is full' } });
       }
 
+      const isHost = meeting.hostId.toString() === user.id;
+
+      if (meeting.settings?.waitingRoom && !isHost) {
+        socket.join(`waiting:${roomCode}`);
+        socket.to(`meeting:${roomCode}`).emit('meeting:waiting-participant', {
+          userId: user.id,
+          displayName: displayName || user.displayName,
+          joinedAt: new Date().toISOString(),
+        });
+        return ack?.({ success: true, data: { displayName: displayName || user.displayName, waiting: true } });
+      }
+
       let session = await ParticipantSession.findOne({
         meetingId: meeting._id,
         userId: user.id,
@@ -48,7 +60,7 @@ export function registerPresenceHandlers(io: Server, socket: Socket) {
         session = await ParticipantSession.create({
           meetingId: meeting._id,
           userId: user.id,
-          role: meeting.hostId.toString() === user.id ? 'host' : 'participant',
+          role: isHost ? 'host' : 'participant',
           joinedAt: new Date(),
         });
       }
@@ -70,7 +82,7 @@ export function registerPresenceHandlers(io: Server, socket: Socket) {
         joinedAt: session.joinedAt.toISOString(),
       });
 
-      if (ack) ack({ success: true, data: { displayName: displayName || user.displayName } });
+      if (ack) ack({ success: true, data: { displayName: displayName || user.displayName, waiting: false } });
     } catch (error) {
       logger.error(error, 'meeting:join error');
       const err = error as Error & { code?: string };

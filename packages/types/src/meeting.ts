@@ -2,6 +2,22 @@ export type MeetingStatus = 'active' | 'ended' | 'scheduled';
 
 export type ParticipantRole = 'host' | 'co-host' | 'participant';
 
+export interface MeetingSettings {
+  waitingRoom: boolean;
+  muteOnJoin: boolean;
+  cameraOffOnJoin: boolean;
+  allowParticipantUnmute: boolean;
+  allowParticipantCam: boolean;
+}
+
+export const DEFAULT_MEETING_SETTINGS: MeetingSettings = {
+  waitingRoom: false,
+  muteOnJoin: true,
+  cameraOffOnJoin: true,
+  allowParticipantUnmute: true,
+  allowParticipantCam: true,
+};
+
 export interface Meeting {
   id: string;
   roomCode: string;
@@ -11,6 +27,7 @@ export interface Meeting {
   coHostIds: string[];
   status: MeetingStatus;
   isLocked: boolean;
+  settings: MeetingSettings;
   participantCount: number;
   maxParticipants: number;
   startedAt: string | null;
@@ -48,6 +65,7 @@ export interface Participant {
   isMuted: boolean;
   isCameraOff: boolean;
   isHandRaised: boolean;
+  isScreenSharing: boolean;
   joinedAt: string;
 }
 

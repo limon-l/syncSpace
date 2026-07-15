@@ -7,6 +7,7 @@ export interface IParticipantSession extends Document {
   isMuted: boolean;
   isCameraOff: boolean;
   isHandRaised: boolean;
+  isScreenSharing: boolean;
   joinedAt: Date;
   leftAt: Date | null;
 }
@@ -30,6 +31,7 @@ const participantSessionSchema = new Schema<IParticipantSession>({
   isMuted: { type: Boolean, default: false },
   isCameraOff: { type: Boolean, default: true },
   isHandRaised: { type: Boolean, default: false },
+  isScreenSharing: { type: Boolean, default: false },
   joinedAt: { type: Date, default: Date.now },
   leftAt: { type: Date, default: null },
 });

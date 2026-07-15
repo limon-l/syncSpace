@@ -17,5 +17,14 @@ export const joinMeetingSchema = z.object({
     .trim(),
 });
 
+export const meetingSettingsUpdateSchema = z.object({
+  waitingRoom: z.boolean().optional(),
+  muteOnJoin: z.boolean().optional(),
+  cameraOffOnJoin: z.boolean().optional(),
+  allowParticipantUnmute: z.boolean().optional(),
+  allowParticipantCam: z.boolean().optional(),
+});
+
 export type CreateMeetingInput = z.infer<typeof createMeetingSchema>;
 export type JoinMeetingInput = z.infer<typeof joinMeetingSchema>;
+export type MeetingSettingsUpdate = z.infer<typeof meetingSettingsUpdateSchema>;
