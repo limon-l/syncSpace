@@ -66,9 +66,6 @@ async function main() {
     timestamp: new Date().toISOString(),
   }));
 
-  createSocketServer(app);
-  createCollabServer(app.server);
-
   await connectDatabase();
 
   try {
@@ -78,6 +75,9 @@ async function main() {
     logger.error(error, 'Failed to start server');
     process.exit(1);
   }
+
+  createSocketServer(app);
+  createCollabServer(app.server);
 }
 
 main();
