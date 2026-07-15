@@ -11,3 +11,4 @@ dist/
 coverage/
 .turbo/
 \web\.env.local
+issue.txt
