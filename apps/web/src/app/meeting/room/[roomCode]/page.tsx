@@ -222,18 +222,45 @@ export default function MeetingRoomPage() {
     const socket = connectSocket();
     setConnected(socket.connected);
 
+    const CONNECT_TIMEOUT_MS = 20_000;
+    let connectTimeout: ReturnType<typeof setTimeout> | null = null;
+    let joinAckTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    if (!socket.connected) {
+      connectTimeout = setTimeout(() => {
+        const state = useMeetingStore.getState();
+        if (!state.isConnected && !state.socketError) {
+          setSocketError({ code: 'CONNECTION_TIMEOUT', message: 'Unable to connect to server. Please check your internet connection and try again.' });
+        }
+      }, CONNECT_TIMEOUT_MS);
+    }
+
+    function emitJoin() {
+      if (hasJoined.current) return;
+      hasJoined.current = true;
+
+      joinAckTimeout = setTimeout(() => {
+        const state = useMeetingStore.getState();
+        if (!state.socketError) {
+          setSocketError({ code: 'JOIN_TIMEOUT', message: 'Server is not responding. Please try again.' });
+        }
+      }, 10_000);
+
+      socket.emit('meeting:join', { roomCode, displayName }, (response: any) => {
+        if (joinAckTimeout) { clearTimeout(joinAckTimeout); joinAckTimeout = null; }
+        if (!response?.success) {
+          setSocketError(response?.error || { code: 'JOIN_FAILED', message: 'Failed to join meeting' });
+        } else {
+          lk.connect();
+        }
+      });
+    }
+
     function onConnect() {
+      if (connectTimeout) { clearTimeout(connectTimeout); connectTimeout = null; }
+      setSocketError(null);
       setConnected(true);
-      if (!hasJoined.current) {
-        hasJoined.current = true;
-        socket.emit('meeting:join', { roomCode, displayName }, (response: any) => {
-          if (!response?.success) {
-            setSocketError(response?.error || { code: 'JOIN_FAILED', message: 'Failed to join meeting' });
-          } else {
-            lk.connect();
-          }
-        });
-      }
+      emitJoin();
     }
 
     function onDisconnect() {
@@ -242,12 +269,14 @@ export default function MeetingRoomPage() {
 
     function onConnectError(error: Error) {
       if (error?.message?.includes('UNAUTHORIZED')) {
+        if (connectTimeout) { clearTimeout(connectTimeout); connectTimeout = null; }
         try { socket.disconnect(); } catch {}
         setSocketError({ code: 'UNAUTHORIZED', message: 'Your session has expired. Please log in again.' });
       }
     }
 
     function onReconnectFailed() {
+      if (connectTimeout) { clearTimeout(connectTimeout); connectTimeout = null; }
       setSocketError({ code: 'CONNECTION_ERROR', message: 'Failed to connect to server. Please check your internet connection and try again.' });
     }
 
@@ -326,17 +355,12 @@ export default function MeetingRoomPage() {
     socket.on('meeting:ended', onMeetingEnded);
 
     if (socket.connected && !hasJoined.current) {
-      hasJoined.current = true;
-      socket.emit('meeting:join', { roomCode, displayName }, (response: any) => {
-        if (!response?.success) {
-          setSocketError(response?.error || { code: 'JOIN_FAILED', message: 'Failed to join meeting' });
-        } else {
-          lk.connect();
-        }
-      });
+      emitJoin();
     }
 
     return () => {
+      if (connectTimeout) { clearTimeout(connectTimeout); }
+      if (joinAckTimeout) { clearTimeout(joinAckTimeout); }
       socket.emit('meeting:leave', { roomCode });
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);

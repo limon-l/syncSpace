@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { Upload, File, Download, Trash2, Loader2 } from 'lucide-react';
 import { getSocket } from '@/lib/socket';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 interface SharedFile {
   id: string;

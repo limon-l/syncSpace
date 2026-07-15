@@ -14,17 +14,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-bg-primary antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <body className="min-h-screen bg-bg-primary antialiased" suppressHydrationWarning>
         <Providers>
           {children}
+          <Toaster
+            position="bottom-center"
+            toastOptions={{
+              className: '!bg-bg-surface !text-text-primary !border !border-border !shadow-lg',
+            }}
+          />
         </Providers>
-        <Toaster
-          position="bottom-center"
-          toastOptions={{
-            className: '!bg-bg-surface !text-text-primary !border !border-border !shadow-lg',
-          }}
-        />
       </body>
     </html>
   );

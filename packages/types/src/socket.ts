@@ -43,7 +43,9 @@ export type SocketErrorCode =
   | 'MEETING_LOCKED'
   | 'UNAUTHORIZED'
   | 'RATE_LIMITED'
-  | 'CONNECTION_ERROR';
+  | 'CONNECTION_ERROR'
+  | 'CONNECTION_TIMEOUT'
+  | 'JOIN_TIMEOUT';
 
 export interface SocketError {
   code: SocketErrorCode;

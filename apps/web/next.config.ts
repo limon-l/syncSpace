@@ -1,11 +1,6 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '1mb',
-    },
-  },
   async rewrites() {
     if (process.env.NEXT_PUBLIC_API_URL) return [];
     return [
