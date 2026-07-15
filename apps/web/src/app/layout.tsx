@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from 'sonner';
+import { Providers } from '@/components/providers';
 
 export const metadata: Metadata = {
   title: 'SyncSpace',
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-bg-primary antialiased">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
         <Toaster
           position="bottom-center"
           toastOptions={{
