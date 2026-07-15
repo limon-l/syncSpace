@@ -14,8 +14,8 @@ const nextConfig: NextConfig = {
         destination: 'http://localhost:4000/socket.io/:path*',
       },
       {
-        source: '/collab',
-        destination: 'http://localhost:4000/collab',
+        source: '/collab/:path*',
+        destination: 'http://localhost:4000/collab/:path*',
       },
     ];
   },

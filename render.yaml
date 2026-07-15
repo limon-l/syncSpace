@@ -12,9 +12,9 @@ services:
       - key: PORT
         value: "4000"
       - key: CORS_ORIGIN
-        value: https://syncspace-web.onrender.com
+        value: https://syncspace-1bop.vercel.app
       - key: APP_URL
-        value: https://syncspace-web.onrender.com
+        value: https://syncspace-1bop.vercel.app
       - key: MONGODB_URI
         sync: false
       - key: SESSION_SECRET
@@ -33,21 +33,3 @@ services:
         sync: false
       - key: LIVEKIT_URL
         sync: false
-
-  - type: web
-    name: syncspace-web
-    env: node
-    rootDir: .
-    buildCommand: pnpm install && npx turbo build --filter=@syncspace/web
-    startCommand: cd apps/web && pnpm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NEXT_PUBLIC_API_URL
-        value: https://syncspace-api.onrender.com
-      - key: NEXT_PUBLIC_SOCKET_URL
-        value: https://syncspace-api.onrender.com
-      - key: NEXT_PUBLIC_LIVEKIT_URL
-        sync: false
-      - key: NEXT_PUBLIC_COLLAB_URL
-        value: https://syncspace-api.onrender.com/collab

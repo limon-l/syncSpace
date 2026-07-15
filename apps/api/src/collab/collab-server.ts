@@ -174,9 +174,15 @@ function handleConnection(ws: WebSocket, docName: string) {
 }
 
 export function createCollabServer(httpServer: HttpServer) {
-  const wss = new WebSocketServer({
-    server: httpServer,
-    path: '/collab',
+  const wss = new WebSocketServer({ noServer: true });
+
+  httpServer.on('upgrade', (req, socket, head) => {
+    const url = new URL(req.url || '/', `http://${req.headers.host}`);
+    if (url.pathname.startsWith('/collab')) {
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        wss.emit('connection', ws, req);
+      });
+    }
   });
 
   wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
