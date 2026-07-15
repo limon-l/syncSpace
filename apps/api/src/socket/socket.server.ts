@@ -11,12 +11,12 @@ import { registerMediaHandlers } from './handlers/media.handler.js';
 
 const vercelAppRegex = /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/;
 
-function resolveSocketOrigin(origin: string | undefined): boolean {
-  if (!origin) return true;
+function resolveSocketOrigin(origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void): void {
+  if (!origin) return cb(null, true);
   const allowed = config.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
-  if (allowed.includes(origin)) return true;
-  if (vercelAppRegex.test(origin)) return true;
-  return false;
+  if (allowed.includes(origin)) return cb(null, true);
+  if (vercelAppRegex.test(origin)) return cb(null, true);
+  cb(null, false);
 }
 
 export interface SocketUser {
